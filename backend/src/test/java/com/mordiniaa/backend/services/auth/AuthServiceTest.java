@@ -1,10 +1,12 @@
 package com.mordiniaa.backend.services.auth;
 
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenFamilyRepository;
+import com.mordiniaa.backend.repositories.mysql.SessionRepository;
 import com.mordiniaa.backend.security.objects.JwtPrincipal;
 import com.mordiniaa.backend.security.service.token.RawTokenService;
 import com.mordiniaa.backend.security.utils.JwtUtils;
 import io.jsonwebtoken.Jwts;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseCookie;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,10 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -47,10 +47,13 @@ public class AuthServiceTest {
     private JwtUtils jwtUtils;
     @Autowired
     private RawTokenService rawTokenService;
+    @Autowired
+    private SessionRepository sessionRepository;
 
     @AfterEach
     void tearDown() {
         refreshTokenFamilyRepository.deleteAll();
+        sessionRepository.deleteAll();
 
         ScanOptions options = ScanOptions.scanOptions()
                 .match("session:*")
@@ -80,7 +83,10 @@ public class AuthServiceTest {
                 )
         );
 
-        List<ResponseCookie> cookies = authService.authenticate(authentication);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        List<ResponseCookie> cookies = authService.authenticate(authentication, request);
         assertNotNull(cookies);
         assertFalse(cookies.isEmpty());
     }
@@ -96,7 +102,12 @@ public class AuthServiceTest {
                 )
         );
 
-        List<ResponseCookie> cookies = authService.authenticate(authentication);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        List<ResponseCookie> cookies = authService.authenticate(authentication, request);
+        Cookie[] cookieArr = cookies.stream().map(cookie -> new Cookie(cookie.getName(), cookie.getValue())).toArray(Cookie[]::new);
+        request.setCookies(cookieArr);
 
         ResponseCookie jwtCookie = cookies.stream().filter(cookie -> cookie.getName().equals("TEAMWORK-ACCESS"))
                 .findFirst().orElseThrow();
@@ -121,13 +132,7 @@ public class AuthServiceTest {
                 .build().parseSignedClaims(jwtToken)
                 .getPayload().get("sid"));
 
-        Authentication jwtAuthentication = new UsernamePasswordAuthenticationToken(
-                new JwtPrincipal(userId, sessionId, roles, refreshToken),
-                null,
-                List.of()
-        );
-
-        List<ResponseCookie> refreshedCookies = authService.refresh(jwtAuthentication);
+        List<ResponseCookie> refreshedCookies = authService.refresh(request);
         assertNotNull(refreshedCookies);
         assertFalse(refreshedCookies.isEmpty());
     }
@@ -143,7 +148,10 @@ public class AuthServiceTest {
                 )
         );
 
-        List<ResponseCookie> cookies = authService.authenticate(authentication);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        List<ResponseCookie> cookies = authService.authenticate(authentication, request);
 
         ResponseCookie jwtCookie = cookies.stream().filter(cookie -> cookie.getName().equals("TEAMWORK-ACCESS"))
                 .findFirst().orElseThrow();
@@ -166,13 +174,15 @@ public class AuthServiceTest {
                 .getPayload().get("sid"));
 
         Authentication jwtAuthentication = new UsernamePasswordAuthenticationToken(
-                new JwtPrincipal(userId, sessionId, roles, refreshToken),
+                new JwtPrincipal(userId, sessionId, roles),
                 null,
                 List.of()
         );
 
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
         assertThrows(RuntimeException.class,
-                () -> authService.refresh(jwtAuthentication));
+                () -> authService.refresh(request));
     }
 
     @Test
@@ -186,7 +196,10 @@ public class AuthServiceTest {
                 )
         );
 
-        List<ResponseCookie> cookies = authService.authenticate(authentication);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        List<ResponseCookie> cookies = authService.authenticate(authentication, request);
 
         ResponseCookie jwtCookie = cookies.stream().filter(cookie -> cookie.getName().equals("TEAMWORK-ACCESS"))
                 .findFirst().orElseThrow();
@@ -208,14 +221,10 @@ public class AuthServiceTest {
                 .build().parseSignedClaims(jwtToken)
                 .getPayload().get("sid"));
 
-        Authentication jwtAuthentication = new UsernamePasswordAuthenticationToken(
-                new JwtPrincipal(userId, sessionId, roles, refreshToken),
-                null,
-                List.of()
-        );
-
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
         assertThrows(RuntimeException.class,
-                () -> authService.refresh(jwtAuthentication));
+                () -> authService.refresh(request));
     }
 
     @Test
@@ -229,7 +238,10 @@ public class AuthServiceTest {
                 )
         );
 
-        List<ResponseCookie> cookies = authService.authenticate(authentication);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        List<ResponseCookie> cookies = authService.authenticate(authentication, request);
 
         ResponseCookie jwtCookie = cookies.stream().filter(cookie -> cookie.getName().equals("TEAMWORK-ACCESS"))
                 .findFirst().orElseThrow();
@@ -257,13 +269,15 @@ public class AuthServiceTest {
                 .getPayload().get("sid"));
 
         Authentication jwtAuthentication = new UsernamePasswordAuthenticationToken(
-                new JwtPrincipal(userId, sessionId, roles, newRefreshToken),
+                new JwtPrincipal(userId, sessionId, roles),
                 null,
                 List.of()
         );
 
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
         assertThrows(RuntimeException.class,
-                () -> authService.refresh(jwtAuthentication));
+                () -> authService.refresh(request));
     }
 
     @Test
@@ -277,7 +291,10 @@ public class AuthServiceTest {
                 )
         );
 
-        List<ResponseCookie> cookies = authService.authenticate(authentication);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        List<ResponseCookie> cookies = authService.authenticate(authentication, request);
 
         ResponseCookie jwtCookie = cookies.stream().filter(cookie -> cookie.getName().equals("TEAMWORK-ACCESS"))
                 .findFirst().orElseThrow();
@@ -305,12 +322,14 @@ public class AuthServiceTest {
                 .getPayload().get("sid"));
 
         Authentication jwtAuthentication = new UsernamePasswordAuthenticationToken(
-                new JwtPrincipal(userId, sessionId, roles, newRefreshToken),
+                new JwtPrincipal(userId, sessionId, roles),
                 null,
                 List.of()
         );
 
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
         assertThrows(RuntimeException.class,
-                () -> authService.refresh(jwtAuthentication));
+                () -> authService.refresh(request));
     }
 }

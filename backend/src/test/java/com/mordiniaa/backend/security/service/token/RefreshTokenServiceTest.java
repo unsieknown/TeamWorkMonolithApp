@@ -2,16 +2,24 @@ package com.mordiniaa.backend.security.service.token;
 
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenFamilyRepository;
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenRepository;
+import com.mordiniaa.backend.repositories.mysql.SessionRepository;
 import com.mordiniaa.backend.security.model.RefreshTokenEntity;
-import jakarta.persistence.EntityManager;
+import com.mordiniaa.backend.security.model.RefreshTokenFamily;
+import com.mordiniaa.backend.services.auth.SessionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.nio.charset.StandardCharsets;
 import java.time.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -34,11 +42,33 @@ public class RefreshTokenServiceTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
-    private EntityManager entityManager;
+    private RefreshTokenFamilyService refreshTokenFamilyService;
+    @Autowired
+    private SessionService sessionService;
+    @Autowired
+    private SessionRepository sessionRepository;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     @AfterEach
     void tearDown() {
         refreshTokenFamilyRepository.deleteAll();
+        sessionRepository.deleteAll();
+
+        ScanOptions options = ScanOptions.scanOptions()
+                .match("session:*")
+                .build();
+
+        assertNotNull(stringRedisTemplate.getConnectionFactory());
+        Cursor<byte[]> cursor = stringRedisTemplate.getConnectionFactory()
+                .getConnection()
+                .scan(options);
+        List<String> keysToDelete = new ArrayList<>();
+        while (cursor.hasNext()) {
+            keysToDelete.add(new String(cursor.next(), StandardCharsets.UTF_8));
+        }
+        if (!keysToDelete.isEmpty())
+            stringRedisTemplate.delete(keysToDelete);
     }
 
     @Test
@@ -46,13 +76,15 @@ public class RefreshTokenServiceTest {
     void generateRefreshTokenEntityTest() {
 
         UUID userId = UUID.randomUUID();
-        Long familyId = new Random().nextLong();
         String rawToken = rawTokenService.generateOpaqueToken();
         List<String> roles = List.of("ROLE_ADMIN");
 
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        RefreshTokenFamily family = refreshTokenFamilyService.createNewFamily(userId, sessionService.createSession(request));
         RefreshTokenEntity entity = refreshTokenService.generateRefreshTokenEntity(
-                userId,
-                familyId,
+                family,
                 rawToken,
                 roles
         );
@@ -67,13 +99,15 @@ public class RefreshTokenServiceTest {
     void rotateTokenValidTest() {
 
         UUID userId = UUID.randomUUID();
-        Long familyId = new Random().nextLong();
         String rawToken = rawTokenService.generateOpaqueToken();
         List<String> roles = List.of("ROLE_ADMIN");
 
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        RefreshTokenFamily family = refreshTokenFamilyService.createNewFamily(userId, sessionService.createSession(request));
         RefreshTokenEntity entity = refreshTokenService.generateRefreshTokenEntity(
-                userId,
-                familyId,
+                family,
                 rawToken,
                 roles
         );
@@ -83,7 +117,7 @@ public class RefreshTokenServiceTest {
         Long tokenId = entity.getId();
         String newToken = rawTokenService.generateOpaqueToken();
 
-        RefreshTokenEntity rotatedEntity = refreshTokenService.rotate(userId, tokenId, rawToken, newToken, roles);
+        RefreshTokenEntity rotatedEntity = refreshTokenService.rotate(userId, tokenId, rawToken, newToken, roles, request);
         assertNotNull(rotatedEntity);
         assertEquals(roles, rotatedEntity.getRoles());
 
@@ -105,8 +139,11 @@ public class RefreshTokenServiceTest {
         String newRawToken = rawTokenService.generateOpaqueToken();
         List<String> roles = List.of("ROLE_USER");
 
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
         assertThrows(RuntimeException.class,
-                () -> refreshTokenService.rotate(userId, tokenId, oldRawToken, newRawToken, roles));
+                () -> refreshTokenService.rotate(userId, tokenId, oldRawToken, newRawToken, roles, request));
     }
 
     @Test
@@ -114,13 +151,15 @@ public class RefreshTokenServiceTest {
     void rotateTokenTokenRevokedTest() {
 
         UUID userId = UUID.randomUUID();
-        Long familyId = new Random().nextLong();
         String rawToken = rawTokenService.generateOpaqueToken();
         List<String> roles = List.of("ROLE_USER");
 
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+        RefreshTokenFamily family = refreshTokenFamilyService.createNewFamily(userId, sessionService.createSession(request));
         RefreshTokenEntity entity = refreshTokenService.generateRefreshTokenEntity(
-                userId,
-                familyId,
+                family,
                 rawToken,
                 roles
         );
@@ -129,21 +168,25 @@ public class RefreshTokenServiceTest {
         refreshTokenRepository.save(entity);
 
         String newToken = rawTokenService.generateOpaqueToken();
+
         assertThrows(RuntimeException.class,
-                () -> refreshTokenService.rotate(userId, entity.getId(), rawToken, newToken, roles));
+                () -> refreshTokenService.rotate(userId, entity.getId(), rawToken, newToken, roles, request));
     }
 
     @Test
     @DisplayName("Rotate Token Raw Tokens Mismatch Test")
     void rotateTokenRawTokenMismatchTest() {
         UUID userId = UUID.randomUUID();
-        Long familyId = new Random().nextLong();
         String rawToken = rawTokenService.generateOpaqueToken();
         List<String> roles = List.of("ROLE_USER");
 
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("User-Agent", "Mozilla/5.0");
+        request.setRemoteAddr("192.168.1.10");
+
+        RefreshTokenFamily family = refreshTokenFamilyService.createNewFamily(userId, sessionService.createSession(request));
         RefreshTokenEntity entity = refreshTokenService.generateRefreshTokenEntity(
-                userId,
-                familyId,
+                family,
                 rawToken,
                 roles
         );
@@ -158,7 +201,8 @@ public class RefreshTokenServiceTest {
                         tokenId,
                         newRawToken,
                         newRawToke2,
-                        roles
+                        roles,
+                        request
                 ));
     }
 }
