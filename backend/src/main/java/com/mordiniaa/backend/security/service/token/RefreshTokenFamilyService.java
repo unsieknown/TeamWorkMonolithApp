@@ -31,4 +31,14 @@ public class RefreshTokenFamilyService {
 
         return refreshTokenFamilyRepository.save(newFamily);
     }
+
+    @Transactional
+    public void deactivateUserAuthenticationFamily(Long familyId, Instant revokedAt) {
+        refreshTokenFamilyRepository.deactivateAuthenticationsFamily(familyId, revokedAt);
+    }
+
+    @Transactional
+    public void deactivateOldUserAuthentications(UUID userId, Long newFamilyId, Instant revokedAt) {
+        refreshTokenFamilyRepository.deactivateOldUserAuthentications(userId, newFamilyId, revokedAt);
+    }
 }
