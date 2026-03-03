@@ -27,8 +27,8 @@ public class RefreshTokenEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "refresh_token_family", referencedColumnName = "id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "refresh_token_family", nullable = false)
     private RefreshTokenFamily refreshTokenFamily;
 
     @Column(name = "hashed_token", updatable = false, nullable = false)
