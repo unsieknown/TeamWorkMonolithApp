@@ -2,14 +2,16 @@ package com.mordiniaa.backend.services.auth;
 
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.response.user.UserInfoResponse;
-import com.mordiniaa.backend.security.objects.JwtPrincipal;
+import com.mordiniaa.backend.security.service.JwtService;
+import com.mordiniaa.backend.security.service.token.RefreshTokenService;
 import com.mordiniaa.backend.security.service.token.TokenService;
 import com.mordiniaa.backend.security.service.user.SecurityUser;
-import com.mordiniaa.backend.security.service.user.SecurityUserProjection;
 import com.mordiniaa.backend.security.token.Token;
 import com.mordiniaa.backend.security.token.TokenSet;
 import com.mordiniaa.backend.security.utils.JwtUtils;
 import com.mordiniaa.backend.services.user.UserService;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -29,6 +31,8 @@ public class AuthService {
     private final TokenService tokenService;
     private final UserService userService;
     private final JwtUtils jwtUtils;
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public UserInfoResponse getUserDetails(UUID userId) {
@@ -50,12 +54,12 @@ public class AuthService {
                 .build();
     }
 
-    public List<ResponseCookie> authenticate(Authentication authentication) {
+    public List<ResponseCookie> authenticate(Authentication authentication, HttpServletRequest request) {
 
         SecurityUser user = (SecurityUser) authentication.getPrincipal();
 
         List<String> roles = user.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
-        TokenSet tokenSet = tokenService.issue(user.getUserId(), roles);
+        TokenSet tokenSet = tokenService.issue(user.getUserId(), roles, request);
 
         return createCookieResponse(
                 tokenSet.getJwtToken(),
@@ -63,14 +67,25 @@ public class AuthService {
         );
     }
 
-    public List<ResponseCookie> refresh(Authentication authentication) {
+    public List<ResponseCookie> refresh(HttpServletRequest request) {
 
-        JwtPrincipal user = (JwtPrincipal) authentication.getPrincipal();
+        String jwtToken = jwtService.parseJwtTokenFromCookie(request.getCookies());
+        String refreshToken = refreshTokenService.parseRefreshTokenFromCookie(request.getCookies());
+
+        Claims claims = jwtService.parseAllowExpired(jwtToken);
+
+        if (jwtToken == null || refreshToken == null) {
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
+
+        UUID userId = jwtService.extractUserId(claims);
+        UUID sessionId = jwtService.extractSessionId(claims);
 
         TokenSet tokenSet = tokenService.refreshToken(
-                user.userId(),
-                user.sessionId(),
-                user.refreshToken()
+                userId,
+                sessionId,
+                refreshToken,
+                request
         );
         
         return createCookieResponse(
