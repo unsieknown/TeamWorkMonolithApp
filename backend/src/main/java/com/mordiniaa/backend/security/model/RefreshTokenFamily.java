@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.security.model;
 
+import com.mordiniaa.backend.models.Session;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,7 +17,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity(name = "RefreshTokenFamily")
 @Table(name = "refresh_token_families", indexes = {
-        @Index(name = "idx_rtf_user", columnList = "user_id")
+        @Index(name = "idx_rtf_user", columnList = "user_id"),
+        @Index(name = "idx_rtf_session", columnList = "session_id")
 })
 public class RefreshTokenFamily {
 
@@ -45,6 +47,15 @@ public class RefreshTokenFamily {
 
     @OneToMany(mappedBy = "refreshTokenFamily", fetch = FetchType.LAZY)
     private List<RefreshTokenEntity> refreshTokens = new ArrayList<>();
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "session_id",
+            nullable = false,
+            unique = true,
+            foreignKey = @ForeignKey(name = "fk_family_session")
+    )
+    private Session session;
 
     public RefreshTokenFamily(UUID userId) {
         this.userId = userId;
