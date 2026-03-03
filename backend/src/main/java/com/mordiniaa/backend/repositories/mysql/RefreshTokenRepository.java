@@ -7,21 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity, Long> {
-
-    @Modifying
-    @Query(value = """
-            update refresh_tokens old
-            join refresh_token_families family on family.id = :familyId
-            set old.revoked = true,
-                old.revoked_at = :revokedAt,
-                family.revoked = true,
-                family.revoked_at = :revokedAt
-            where old.id = :tokenId
-            """, nativeQuery = true)
-    void deactivateTokenWithFamily(Long tokenId, Long familyId, Instant revokedAt);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
