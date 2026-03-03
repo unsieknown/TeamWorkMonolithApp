@@ -2,10 +2,8 @@ package com.mordiniaa.backend.security.service;
 
 import com.mordiniaa.backend.security.token.JwtToken;
 import com.mordiniaa.backend.security.utils.JwtUtils;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.*;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,8 +12,10 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -35,23 +35,6 @@ public class JwtService {
     private String audience;
 
     private final JwtUtils jwtUtils;
-
-    public boolean validateToke(String jwtToken) {
-        try {
-            Jwts.parser().verifyWith((SecretKey) jwtUtils.key())
-                    .build().parseSignedClaims(jwtToken);
-            return true;
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            log.error("JWT token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            log.error("JWT token is not supported: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims starting is empty: {}", e.getMessage());
-        }
-        return false;
-    }
 
     public JwtToken buildJwt(String subject, String sessionId, List<String> roles) {
 
@@ -75,22 +58,56 @@ public class JwtService {
         return new JwtToken(tokenName, jwt, exp.toEpochMilli());
     }
 
-    public String extractUserId(String authToken) {
-//        return Jwts.parser()
-//                .verifyWith((SecretKey) jwtUtils.key())
-//                .build()
-//                .parseSignedClaims(authToken)
-//                .getPayload()
-        return null;
+    public UUID extractUserId(Claims claims) {
+
+        String stringId = claims.getSubject();
+
+        try {
+            return UUID.fromString(stringId);
+        } catch (Exception e) {
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
     }
 
-    public String extractSessionId(String authToken) {
+    public UUID extractSessionId(Claims claims) {
 
-        return null;
+        String stringId = (String) claims.get("sid");
+
+        try {
+            return UUID.fromString(stringId);
+        } catch (Exception e) {
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
     }
 
-    public List<String> extractRoles(String authToken) {
+    public List<String> extractRoles(Claims claims) {
 
-        return null;
+        List<?> temp = (List<?>) claims.get("role");
+        return temp.stream()
+                .map(String.class::cast)
+                .toList();
+    }
+
+    public Claims parseAndValidate(String jwtToken) {
+        return Jwts.parser()
+                .verifyWith((SecretKey) jwtUtils.key())
+                .build()
+                .parseSignedClaims(jwtToken)
+                .getPayload();
+    }
+
+    public Claims parseAllowExpired(String jwtToken) {
+        try {
+            return parseAndValidate(jwtToken);
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();
+        }
+    }
+
+    public String parseJwtTokenFromCookie(Cookie[] cookies) {
+        return Arrays.stream(cookies)
+                .filter(cookie -> cookie.getName().equals(tokenName))
+                .map(Cookie::getValue)
+                .findFirst().orElse(null);
     }
 }
