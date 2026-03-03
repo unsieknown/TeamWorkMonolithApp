@@ -10,44 +10,38 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class SessionService {
+public class SessionRedisService {
 
     private final StringRedisTemplate redis;
 
-    public void createSession(UUID sessionId, Long refreshTokenId) {
-
-        String key = key(sessionId);
-
+    public void storeSession(UUID sessionId, Long refreshTokenId, Long ttl) {
         redis.opsForValue().set(
-                key,
+                key(sessionId),
                 refreshTokenId.toString(),
-                Duration.ofMinutes(30)
+                Duration.ofMillis(ttl)
         );
     }
 
     public Long getTokenIdBySessionId(UUID sessionId) {
-
-        String key = key(sessionId);
-        String value = Optional.ofNullable(redis.opsForValue().get(key))
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
-
-        return Long.parseLong(value);
+        return Optional.ofNullable(redis.opsForValue().get(key(sessionId)))
+                .map(Long::parseLong)
+                .orElse(null);
     }
 
-    public void rotateRefreshToken(UUID sessionId, Long refreshTokenId) {
-
-        String key = key(sessionId);
+    public void rotateRefreshToken(UUID sessionId, Long refreshTokenId, Long ttl) {
         redis.opsForValue().set(
-                key,
+                key(sessionId),
                 refreshTokenId.toString(),
-                Duration.ofMinutes(30)
+                Duration.ofMillis(ttl)
         );
     }
 
-    public void deleteSession(UUID sessionId) {
+    public boolean validateSession(UUID sessionId) {
+        return redis.opsForValue().get(key(sessionId)) != null;
+    }
 
-        String key = key(sessionId);
-        redis.delete(key);
+    public void deleteSession(UUID sessionId) {
+        redis.delete(key(sessionId));
     }
 
     private String key(UUID sessionId) {
