@@ -28,7 +28,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
 
     @PostMapping("/signin")
-    public ResponseEntity<Void> login(LoginRequest loginRequest) {
+    public ResponseEntity<Void> login(LoginRequest loginRequest, HttpServletRequest request) {
 
         Authentication authentication;
         try {
@@ -44,7 +44,7 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        HttpHeaders headers = authService.authenticate(authentication)
+        HttpHeaders headers = authService.authenticate(authentication, request)
                 .stream()
                 .collect(
                         HttpHeaders::new,
@@ -70,9 +70,9 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<Void> refreshTokens(Authentication authentication) {
+    public ResponseEntity<Void> refreshTokens(HttpServletRequest request) {
 
-        HttpHeaders headers = authService.refresh(authentication)
+        HttpHeaders headers = authService.refresh(request)
                 .stream()
                 .collect(
                         HttpHeaders::new,
