@@ -5,7 +5,6 @@ import com.mordiniaa.backend.models.team.Team;
 import com.mordiniaa.backend.models.user.DbUser;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.mongodb.core.index.Indexed;
 
 import java.time.LocalDate;
 import java.util.Collections;
