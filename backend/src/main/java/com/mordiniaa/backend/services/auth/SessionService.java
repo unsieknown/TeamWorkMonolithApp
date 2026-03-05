@@ -25,7 +25,7 @@ public class SessionService {
         Session session = new Session();
         session.setLastActivity(Instant.now());
         session.setIpAddress(request.getRemoteAddr());
-        session.setUserAgent(request.getHeader("user-agent"));
+        session.setUserAgent(request.getHeader("User-Agent"));
 
         return sessionRepository.save(session);
     }

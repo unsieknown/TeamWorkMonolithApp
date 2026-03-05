@@ -103,7 +103,7 @@ public class RefreshTokenService {
 
     private void validateSession(Session userSession, HttpServletRequest request) {
 
-        String userAgent = request.getHeader("user-agent");
+        String userAgent = request.getHeader("User-Agent");
         if (!Objects.equals(userSession.getUserAgent(), userAgent))
             throw new RuntimeException(); // TODO: Change In Exceptions Section
     }
