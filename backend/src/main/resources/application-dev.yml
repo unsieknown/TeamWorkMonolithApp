@@ -105,3 +105,8 @@ security:
       validity-days: 30
     refresh-token-family:
       max-session-days: 90
+
+redis:
+  keys:
+    session: session
+    rate-limit: rate_limit
