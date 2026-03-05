@@ -4,11 +4,12 @@ import com.mordiniaa.backend.models.user.mysql.AppRole;
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenFamilyRepository;
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenRepository;
 import com.mordiniaa.backend.repositories.mysql.UserRepository;
-import com.mordiniaa.backend.security.service.SessionService;
+import com.mordiniaa.backend.security.service.SessionRedisService;
 import com.mordiniaa.backend.security.token.JwtToken;
 import com.mordiniaa.backend.security.token.RefreshToken;
 import com.mordiniaa.backend.security.token.TokenSet;
 import com.mordiniaa.backend.security.utils.JwtUtils;
+import com.mordiniaa.backend.services.auth.SessionService;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import javax.crypto.SecretKey;
@@ -51,6 +53,8 @@ public class TokenServiceTest {
     private UserRepository userRepository;
     @Autowired
     private RawTokenService rawTokenService;
+    @Autowired
+    private SessionRedisService sessionRedisService;
 
     @AfterEach
     void tearDown() {
@@ -79,7 +83,10 @@ public class TokenServiceTest {
         UUID userId = UUID.randomUUID();
         List<String> roles = List.of("ROLE_USER");
 
-        TokenSet tokenSet = tokenService.issue(userId, roles);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
+        TokenSet tokenSet = tokenService.issue(userId, roles, request);
         assertNotNull(tokenSet);
 
         JwtToken jwtToken = tokenSet.getJwtToken();
@@ -103,7 +110,7 @@ public class TokenServiceTest {
         UUID sessionId = getSessionIdFromJwtToken(jwtToken.getToken());
         assertNotNull(sessionId);
 
-        Long tokenIdFromRedis = sessionService.getTokenIdBySessionId(sessionId);
+        Long tokenIdFromRedis = sessionRedisService.getTokenIdBySessionId(sessionId);
         assertNotNull(tokenIdFromRedis);
         assertEquals(Long.parseLong(idPart), tokenIdFromRedis);
     }
@@ -117,10 +124,13 @@ public class TokenServiceTest {
                 .getUserId();
         List<String> roles = List.of("ROLE_USER");
 
-        TokenSet tokenSet = tokenService.issue(userId, roles);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
+        TokenSet tokenSet = tokenService.issue(userId, roles, request);
         UUID sessionId = getSessionIdFromJwtToken(tokenSet.getJwtToken().getToken());
 
-        TokenSet newSet = tokenService.refreshToken(userId, sessionId, tokenSet.getRefreshToken().getToken());
+        TokenSet newSet = tokenService.refreshToken(userId, sessionId, tokenSet.getRefreshToken().getToken(), request);
         assertNotNull(newSet);
 
         JwtToken jwtToken = newSet.getJwtToken();
@@ -144,7 +154,7 @@ public class TokenServiceTest {
         sessionId = getSessionIdFromJwtToken(jwtToken.getToken());
         assertNotNull(sessionId);
 
-        Long tokenIdFromRedis = sessionService.getTokenIdBySessionId(sessionId);
+        Long tokenIdFromRedis = sessionRedisService.getTokenIdBySessionId(sessionId);
         assertNotNull(tokenIdFromRedis);
         assertEquals(Long.parseLong(idPart), tokenIdFromRedis);
     }
@@ -156,11 +166,14 @@ public class TokenServiceTest {
         UUID userId = UUID.randomUUID();
         List<String> roles = List.of("ROLE_USER");
 
-        TokenSet tokenSet = tokenService.issue(userId, roles);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
+        TokenSet tokenSet = tokenService.issue(userId, roles, request);
         UUID sessionId = getSessionIdFromJwtToken(tokenSet.getJwtToken().getToken());
 
         assertThrows(RuntimeException.class,
-                () -> tokenService.refreshToken(userId, sessionId, tokenSet.getRefreshToken().getToken()));
+                () -> tokenService.refreshToken(userId, sessionId, tokenSet.getRefreshToken().getToken(), request));
     }
 
     @Test
@@ -171,10 +184,13 @@ public class TokenServiceTest {
                 .getUserId();
         List<String> roles = List.of("ROLE_USER");
 
-        TokenSet tokenSet = tokenService.issue(userId, roles);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
+        TokenSet tokenSet = tokenService.issue(userId, roles, request);
 
         assertThrows(RuntimeException.class,
-                () -> tokenService.refreshToken(userId, UUID.randomUUID(), tokenSet.getRefreshToken().getToken()));
+                () -> tokenService.refreshToken(userId, UUID.randomUUID(), tokenSet.getRefreshToken().getToken(), request));
     }
 
     @Test
@@ -186,12 +202,16 @@ public class TokenServiceTest {
                 .getUserId();
 
         List<String> roles = List.of("ROLE_USER");
-        TokenSet tokenSet = tokenService.issue(userId, roles);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
+        TokenSet tokenSet = tokenService.issue(userId, roles, request);
         UUID sessionId = getSessionIdFromJwtToken(tokenSet.getJwtToken().getToken());
 
         String anotherToken = rawTokenService.generateOpaqueToken();
         assertThrows(RuntimeException.class,
-                () -> tokenService.refreshToken(userId, sessionId, anotherToken));
+                () -> tokenService.refreshToken(userId, sessionId, anotherToken, request));
     }
 
     private UUID getSessionIdFromJwtToken(String token) {

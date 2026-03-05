@@ -1,12 +1,15 @@
 package com.mordiniaa.backend.security.service.token;
 
+import com.mordiniaa.backend.models.Session;
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenFamilyRepository;
 import com.mordiniaa.backend.security.model.RefreshTokenFamily;
+import com.mordiniaa.backend.services.auth.SessionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Duration;
@@ -25,6 +28,8 @@ public class RefreshTokenFamilyServiceTest {
 
     @Autowired
     private RefreshTokenFamilyRepository refreshTokenFamilyRepository;
+    @Autowired
+    private SessionService sessionService;
 
     @AfterEach
     void tearDown() {
@@ -32,13 +37,17 @@ public class RefreshTokenFamilyServiceTest {
     }
 
     @Test
-    @DisplayName("Get Refresh Token Family Or Create Test")
+    @DisplayName("Get Refresh Token Family")
     void getRefreshTokenFamilyOrCreateTest() {
 
         Long familyId = new Random().nextLong();
         UUID userId = UUID.randomUUID();
 
-        RefreshTokenFamily newFamily = refreshTokenFamilyService.getRefreshTokenFamilyOrCreate(familyId, userId);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
+        Session session = sessionService.createSession(request);
+        RefreshTokenFamily newFamily = refreshTokenFamilyService.createNewFamily(userId, session);
         assertNotNull(newFamily);
 
         assertEquals(userId, newFamily.getUserId());
@@ -46,13 +55,6 @@ public class RefreshTokenFamilyServiceTest {
         Long savedFamilyId = newFamily.getId();
         assertTrue(savedFamilyId > 1);
         assertNotEquals(familyId, savedFamilyId);
-
-        RefreshTokenFamily savedFamily = refreshTokenFamilyService.getRefreshTokenFamilyOrCreate(savedFamilyId, userId);
-        assertNotNull(savedFamily);
-        assertEquals(userId, savedFamily.getUserId());
-        assertEquals(savedFamilyId, savedFamily.getId());
-
-        assertTrue(savedFamily.getExpiresAt().toEpochMilli() > Instant.now().plus(Duration.ofDays(89)).toEpochMilli());
     }
 }
 
