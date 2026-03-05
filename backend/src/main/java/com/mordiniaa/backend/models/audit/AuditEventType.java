@@ -9,5 +9,6 @@ public enum AuditEventType {
     LOGOUT,
     ACCESS_DENIED,
     UNAUTHORIZED,
-    PASSWORD_CHANGED
+    PASSWORD_CHANGED,
+    TO_MANY_REQUESTS
 }
