@@ -46,7 +46,26 @@ spring:
     schemas: ${MYSQL_DATABASE:team-work}
   main:
     banner-mode: off
-
+  kafka:
+    bootstrap-servers: ${KAFKA_BS_SERVER:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        delivery.timeout.ms: 5000
+        request.timeout.ms: 3000
+        retries: 2
+        max.block.ms: 2000
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    topics:
+      audit:
+        name: audit-topic
+        group-name: audit-group
 logging:
   level:
     org:
@@ -56,6 +75,10 @@ logging:
           autoconfigure:
             data:
               redis: debug
+      apache:
+        kafka:
+          clients:
+            NetworkClient: error
 storage:
   profileImages:
     path: ${PROFILE_IMAGES_ROOT:./profile_images_storage}
