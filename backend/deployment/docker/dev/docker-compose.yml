@@ -122,6 +122,10 @@ services:
     environment:
       PROFILE: dev
       STORAGE_ROOT: ${STORAGE_ROOT}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_USER: ${REDIS_USER}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       KAFKA_BS_SERVER: kafka:9092
       JWT_SECRET: ${JWT_SECRET}
       PROFILE_IMAGES_ROOT: ${PROFILE_IMAGES_ROOT}
