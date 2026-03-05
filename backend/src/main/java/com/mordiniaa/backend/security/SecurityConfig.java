@@ -2,6 +2,7 @@ package com.mordiniaa.backend.security;
 
 import com.mordiniaa.backend.security.filters.AuditLoggingFilter;
 import com.mordiniaa.backend.security.filters.JwtAuthenticationFilter;
+import com.mordiniaa.backend.security.filters.RateLimitFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -23,7 +24,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, AuditLoggingFilter auditLoggingFilter) throws Exception {
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, AuditLoggingFilter auditLoggingFilter, RateLimitFilter rateLimitFilter) throws Exception {
         return http
                 .csrf(csrf ->
                         csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -38,7 +39,8 @@ public class SecurityConfig {
                                 .requestMatchers("/api/v1/test/**").permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(auditLoggingFilter, JwtAuthenticationFilter.class)
+                .addFilterBefore(auditLoggingFilter, JwtAuthenticationFilter.class)
+                .addFilterAfter(rateLimitFilter, AuditLoggingFilter.class)
                 .build();
     }
 }
