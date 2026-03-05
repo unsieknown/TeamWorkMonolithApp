@@ -4,6 +4,7 @@ import com.mordiniaa.backend.models.audit.AuditEventType;
 import com.mordiniaa.backend.audit.logAudit.AuditLogEvent;
 import com.mordiniaa.backend.audit.logAudit.kafka.AuditPublisher;
 import com.mordiniaa.backend.security.objects.JwtPrincipal;
+import com.mordiniaa.backend.utils.IpAddrUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class AuditLoggingFilter extends OncePerRequestFilter {
 
     private final AuditPublisher auditPublisher;
+    private final IpAddrUtils ipAddrUtils;
 
     @Override
     protected void doFilterInternal(
@@ -58,7 +60,7 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
                     .method(request.getMethod())
                     .uri(request.getRequestURI())
                     .status(response.getStatus())
-                    .ip(extractedClientIp(request))
+                    .ip(ipAddrUtils.extractClientId(request))
                     .userAgent(request.getHeader("User-Agent"))
                     .duration(duration)
                     .timestamp(Instant.now())
@@ -74,15 +76,7 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
 
         if (status == 401) return AuditEventType.UNAUTHORIZED;
         if (status == 403) return AuditEventType.ACCESS_DENIED;
+        if (status == 429) return AuditEventType.TO_MANY_REQUESTS;
         return AuditEventType.REQUEST;
-    }
-
-    private String extractedClientIp(HttpServletRequest request) {
-
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null) {
-            return forwarded.split(",")[0];
-        }
-        return request.getRemoteAddr();
     }
 }
