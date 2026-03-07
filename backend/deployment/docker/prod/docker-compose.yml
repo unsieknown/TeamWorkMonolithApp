@@ -19,6 +19,7 @@ services:
       timeout: 3s
       retries: 10
       start_period: 10s
+
   mysql:
     image: mysql:8.0
     networks:
@@ -39,6 +40,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
   phpmyadmin:
     image: phpmyadmin:5.2.3-apache
     restart: unless-stopped
@@ -54,6 +56,50 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     depends_on:
       - mysql
+
+  redis:
+    image: redis:8.4-alpine
+    networks:
+      - dbs
+      - team-work
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "password", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  kafka:
+    image: apache/kafka:latest
+    working_dir: /opt/kafka/bin
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+    ports:
+      - "9092:9092"
+    networks:
+      - team-work
+    healthcheck:
+      test: [ "CMD-SHELL", "./kafka-topics.sh --bootstrap-server localhost:9092 --list" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
   teamwork-app:
     image: mordiniaa/teamworkmon
     networks:
@@ -63,14 +109,25 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     volumes:
-      - prod_files_storage:${STORAGE_ROOT}
-      - prod_profile_images_storage:${PROFILE_IMAGES_ROOT}
+      - ./admin_password.txt:/run/secrets/admin_password:ro
+      - prod_data:/data
     ports:
       - "8080:8080"
     environment:
       PROFILE: prod
+      BANNED_IPS_FILE: ${BANNED_IPS_FILE}
       STORAGE_ROOT: ${STORAGE_ROOT}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_USER: ${REDIS_USER}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      KAFKA_BS_SERVER: kafka:9092
+      JWT_SECRET: ${JWT_SECRET}
       PROFILE_IMAGES_ROOT: ${PROFILE_IMAGES_ROOT}
       MONGO_HOST: mongodb
       MONGO_PORT: 27017
@@ -93,5 +150,4 @@ networks:
 volumes:
   prod_mongo_data:
   prod_mysql_data:
-  prod_files_storage:
-  prod_profile_images_storage:
+  prod_data:
