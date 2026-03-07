@@ -42,7 +42,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
         LongAdder counter = localRate.get(ip, k -> new LongAdder());
         counter.increment();
         long requests = counter.longValue();
-        System.out.println("REQUESTS=" + requests);
 
         if (requests <= 100) {
             filterChain.doFilter(request, response);

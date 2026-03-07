@@ -44,7 +44,6 @@ public class FileBanService {
     }
 
     public void enqueuePermanentBan(String ip) {
-        System.out.println("Adding To Ban");
         if (pending.add(ip))
             queue.offer(ip);
     }

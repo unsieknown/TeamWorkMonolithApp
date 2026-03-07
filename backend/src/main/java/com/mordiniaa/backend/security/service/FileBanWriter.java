@@ -36,9 +36,6 @@ public class FileBanWriter {
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-
-                System.out.println("Waiting for IP...");
-
                 String first = queue.take();
                 batch.add(first);
 
@@ -48,8 +45,6 @@ public class FileBanWriter {
 
                     batch.add(next);
                 }
-
-                System.out.println("TEST");
 
                 Files.write(
                         FILE,
@@ -64,7 +59,7 @@ public class FileBanWriter {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
-                log.error("An Error Occurred While Writing To Ban File: {}", e);
+                log.error("An Error Occurred While Writing To Ban File: {}", e.getMessage());
             }
         }
     }
