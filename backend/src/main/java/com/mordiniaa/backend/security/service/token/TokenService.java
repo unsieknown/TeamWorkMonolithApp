@@ -82,7 +82,12 @@ public class TokenService {
             throw new RuntimeException(); // TODO: Change In Exceptions Section
         }
 
-        long storedTokenId = sessionRedisService.getTokenIdBySessionId(sessionId);
+        Long storedTokenId = sessionRedisService.getTokenIdBySessionId(sessionId);
+        if (storedTokenId == null) {
+            storedTokenId = refreshTokenService.getStoredRefreshTokenForSession(sessionId)
+                    .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+        }
+
         if (tokenId != storedTokenId)
             throw new RuntimeException(); // TODO: Change In Exceptions Section
 

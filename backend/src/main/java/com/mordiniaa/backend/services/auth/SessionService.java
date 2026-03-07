@@ -36,4 +36,8 @@ public class SessionService {
         sessionRepository.revokeSessionsAndTokens(sessionIds);
         sessionIds.forEach(sessionRedisService::deleteSession);
     }
+
+    public boolean validateSession(UUID sessionId) {
+        return sessionRepository.existsById(sessionId);
+    }
 }

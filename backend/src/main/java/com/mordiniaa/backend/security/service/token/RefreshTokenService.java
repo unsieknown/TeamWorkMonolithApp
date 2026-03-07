@@ -9,11 +9,14 @@ import com.mordiniaa.backend.security.model.RefreshTokenEntity;
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -97,7 +100,6 @@ public class RefreshTokenService {
         RefreshTokenEntity savedEntity = refreshTokenRepository.save(newTokenEntity);
 
         rotateToken(savedEntity.getId(), storedTokenEntity.getId(), now);
-        userSession.setLastActivity(Instant.now());
         return savedEntity;
     }
 
@@ -150,5 +152,13 @@ public class RefreshTokenService {
                 .filter(cookie -> cookie.getName().equals(tokenName))
                 .map(Cookie::getValue)
                 .findFirst().orElse(null);
+    }
+
+    public ResponseCookie clearUserToken() {
+        return ResponseCookie.from(tokenName).path("/").build();
+    }
+
+    public Optional<Long> getStoredRefreshTokenForSession(UUID sessionId) {
+        return refreshTokenRepository.findTokenIdBySessionId(sessionId);
     }
 }
