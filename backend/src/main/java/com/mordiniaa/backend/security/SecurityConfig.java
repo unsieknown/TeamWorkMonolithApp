@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
@@ -38,6 +37,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requests ->
                         requests
                                 .requestMatchers("/api/csrf-token").permitAll()
+                                .requestMatchers(
+                                        "/api/v1/auth/user",
+                                        "/api/v1/auth/signout",
+                                        "/api/v1/auth/refresh"
+                                ).hasAnyRole("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_USER")
+                                .requestMatchers("/api/v1/auth/signin").permitAll()
                                 .requestMatchers("/api/v1/test/**").permitAll()
                 )
                 .addFilterBefore(ipBlockFilter, UsernamePasswordAuthenticationFilter.class)
