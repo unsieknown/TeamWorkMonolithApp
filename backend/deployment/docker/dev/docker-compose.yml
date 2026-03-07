@@ -115,12 +115,12 @@ services:
         condition: service_healthy
     volumes:
       - ./admin_password.txt:/run/secrets/admin_password:ro
-      - dev_files_storage:${STORAGE_ROOT}
-      - dev_profile_images_storage:${PROFILE_IMAGES_ROOT}
+      - dev_data:/data
     ports:
       - "8081:8080"
     environment:
       PROFILE: dev
+      BANNED_IPS_FILE: ${BANNED_IPS_FILE}
       STORAGE_ROOT: ${STORAGE_ROOT}
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -150,5 +150,4 @@ networks:
 volumes:
   dev_mongo_data:
   dev_mysql_data:
-  dev_files_storage:
-  dev_profile_images_storage:
+  dev_data:
