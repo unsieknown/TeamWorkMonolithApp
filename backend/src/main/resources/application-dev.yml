@@ -49,7 +49,7 @@ spring:
   main:
     banner-mode: off
   kafka:
-    bootstrap-servers: ${KAFKA_BS_SERVER:localhost:9092}
+    bootstrap-servers: ${KAFKA_BS_SERVER:localhost:9093}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -66,8 +66,8 @@ spring:
         spring.json.trusted.packages: "*"
     topics:
       audit:
-        name: audit-topic
-        group-name: audit-group
+        name: dev-audit-topic
+        group-name: dev-audit-group
 logging:
   level:
     org:

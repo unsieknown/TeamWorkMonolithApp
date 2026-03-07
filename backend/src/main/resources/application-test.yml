@@ -29,6 +29,9 @@ spring:
     username: team-work-tester
     password: password
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
   jpa:
     hibernate:
       ddl-auto: validate
@@ -45,7 +48,26 @@ spring:
     schemas: team-work
   main:
     banner-mode: off
-
+  kafka:
+    bootstrap-servers: localhost:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        delivery.timeout.ms: 5000
+        request.timeout.ms: 3000
+        retries: 2
+        max.block.ms: 2000
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    topics:
+      audit:
+        name: test-audit-topic
+        group-name: test-audit-group
 logging:
   level:
     org:
@@ -55,6 +77,10 @@ logging:
           autoconfigure:
             data:
               redis: debug
+      apache:
+        kafka:
+          clients:
+            NetworkClient: error
 storage:
   profileImages:
     path: ./profile_images_storage
@@ -67,6 +93,8 @@ storage:
     defaultImagePath: static/images/defaultProfileImage.png
   cloudStorage:
     path: ./files_storage
+  bannedIps:
+    path: ./banned_ips.txt
 
 security:
   app:
@@ -81,3 +109,12 @@ security:
       validity-days: 30
     refresh-token-family:
       max-session-days: 90
+
+redis:
+  keys:
+    session: session
+    blocked-ip: blocked_ip
+    ban-count: ban_count
+
+server:
+  port: 8082
