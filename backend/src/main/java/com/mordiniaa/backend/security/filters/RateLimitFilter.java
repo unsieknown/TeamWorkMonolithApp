@@ -1,6 +1,8 @@
 package com.mordiniaa.backend.security.filters;
 
-import com.mordiniaa.backend.security.service.RateLimitingRedisService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.mordiniaa.backend.security.service.BlockIpRedisService;
 import com.mordiniaa.backend.utils.IpAddrUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,13 +14,21 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.atomic.LongAdder;
 
 @Component
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final IpAddrUtils ipAddrUtils;
-    private final RateLimitingRedisService rateLimitingRedisService;
+    private final BlockIpRedisService blockIpRedisService;
+
+    private final Cache<String, LongAdder> localRate =
+            Caffeine.newBuilder()
+                    .expireAfterWrite(Duration.ofSeconds(5))
+                    .maximumSize(50_000)
+                    .build();
 
     @Override
     protected void doFilterInternal(
@@ -27,18 +37,29 @@ public class RateLimitFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String userId = ipAddrUtils.extractClientId(request);
+        String ip = ipAddrUtils.extractClientIp(request);
 
-        Long requests = rateLimitingRedisService.incRequest(userId);
-        if (requests == null) {
-            response.setStatus(500);
+        LongAdder counter = localRate.get(ip, k -> new LongAdder());
+        counter.increment();
+        long requests = counter.longValue();
+        System.out.println("REQUESTS=" + requests);
+
+        if (requests <= 100) {
+            filterChain.doFilter(request, response);
             return;
         }
 
-        if (requests > 100) {
+        if (requests <= 300) {
             response.setStatus(429);
             return;
         }
-        filterChain.doFilter(request, response);
+
+        if (requests <= 500) {
+            response.setStatus(429);
+            return;
+        }
+
+        blockIpRedisService.blockTemporaryEscalating(ip);
+        response.setStatus(429);
     }
 }
