@@ -41,7 +41,7 @@ public class SecurityConfig {
                                         "/api/v1/auth/user",
                                         "/api/v1/auth/signout",
                                         "/api/v1/auth/refresh"
-                                ).hasAnyRole("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_USER")
+                                ).hasAnyRole("ADMIN", "MANAGER", "USER")
                                 .requestMatchers("/api/v1/auth/signin").permitAll()
                                 .requestMatchers("/api/v1/test/**").permitAll()
                 )
