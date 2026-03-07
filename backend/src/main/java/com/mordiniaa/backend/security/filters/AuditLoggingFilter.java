@@ -33,8 +33,7 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        
-        
+
         long start = System.currentTimeMillis();
         
         try {
@@ -52,15 +51,16 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
                 sessionId = principal.sessionId();
             }
 
+            int status = response.getStatus();
             AuditLogEvent event = AuditLogEvent.builder()
                     .eventId(UUID.randomUUID().toString())
-                    .eventType(resolveType(response))
+                    .eventType(resolveType(status))
                     .userId(userId)
                     .sessionId(sessionId)
                     .method(request.getMethod())
                     .uri(request.getRequestURI())
                     .status(response.getStatus())
-                    .ip(ipAddrUtils.extractClientId(request))
+                    .ip(ipAddrUtils.extractClientIp(request))
                     .userAgent(request.getHeader("User-Agent"))
                     .duration(duration)
                     .timestamp(Instant.now())
@@ -71,12 +71,12 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
         }
     }
 
-    private AuditEventType resolveType(HttpServletResponse response) {
-        int status = response.getStatus();
-
-        if (status == 401) return AuditEventType.UNAUTHORIZED;
-        if (status == 403) return AuditEventType.ACCESS_DENIED;
-        if (status == 429) return AuditEventType.TO_MANY_REQUESTS;
-        return AuditEventType.REQUEST;
+    private AuditEventType resolveType(int status) {
+        return switch (status) {
+            case 401 -> AuditEventType.UNAUTHORIZED;
+            case 403 -> AuditEventType.ACCESS_DENIED;
+            case 429 -> AuditEventType.TO_MANY_REQUESTS;
+            default -> AuditEventType.REQUEST;
+        };
     }
 }
