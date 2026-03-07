@@ -29,10 +29,12 @@ spring:
     username: ${MYSQL_USER}
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
     database: mysql
   servlet:
     multipart:
@@ -91,6 +93,8 @@ storage:
     defaultImagePath: static/images/defaultProfileImage.png
   cloudStorage:
     path: ${STORAGE_ROOT:./files_storage}
+  bannedIps:
+    path: ${BANNED_IPS_FILE:./banned_ips.txt}
 
 security:
   app:
@@ -109,4 +113,5 @@ security:
 redis:
   keys:
     session: session
-    rate-limit: rate_limit
+    blocked-ip: blocked_ip
+    ban-count: ban_count
