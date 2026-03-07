@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.security;
 
 import com.mordiniaa.backend.security.filters.AuditLoggingFilter;
+import com.mordiniaa.backend.security.filters.IpBlockFilter;
 import com.mordiniaa.backend.security.filters.JwtAuthenticationFilter;
 import com.mordiniaa.backend.security.filters.RateLimitFilter;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
@@ -24,7 +26,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, AuditLoggingFilter auditLoggingFilter, RateLimitFilter rateLimitFilter) throws Exception {
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, AuditLoggingFilter auditLoggingFilter, RateLimitFilter rateLimitFilter, IpBlockFilter ipBlockFilter) throws Exception {
         return http
                 .csrf(csrf ->
                         csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -38,9 +40,10 @@ public class SecurityConfig {
                                 .requestMatchers("/api/csrf-token").permitAll()
                                 .requestMatchers("/api/v1/test/**").permitAll()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(auditLoggingFilter, JwtAuthenticationFilter.class)
+                .addFilterBefore(ipBlockFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(auditLoggingFilter, IpBlockFilter.class)
                 .addFilterAfter(rateLimitFilter, AuditLoggingFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, RateLimitFilter.class)
                 .build();
     }
 }
