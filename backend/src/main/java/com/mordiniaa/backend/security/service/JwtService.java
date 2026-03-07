@@ -55,7 +55,8 @@ public class JwtService {
                 .signWith(jwtUtils.key())
                 .compact();
 
-        return new JwtToken(tokenName, jwt, exp.toEpochMilli());
+        long ttl = exp.toEpochMilli() - now.toEpochMilli();
+        return new JwtToken(tokenName, jwt, ttl);
     }
 
     public UUID extractUserId(Claims claims) {
@@ -82,10 +83,8 @@ public class JwtService {
 
     public List<String> extractRoles(Claims claims) {
 
-        List<?> temp = (List<?>) claims.get("role");
-        return temp.stream()
-                .map(String.class::cast)
-                .toList();
+        String role = (String) claims.get("role");
+        return List.of(role);
     }
 
     public Claims parseAndValidate(String jwtToken) {

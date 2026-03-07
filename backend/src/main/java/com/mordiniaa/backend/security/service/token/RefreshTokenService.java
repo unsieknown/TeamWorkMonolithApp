@@ -110,7 +110,7 @@ public class RefreshTokenService {
 
     public RefreshToken generateRefreshToken(RefreshTokenEntity entity, String rawToken) {
         String storedRawToken = entity.getId() + "." + rawToken;
-        return new RefreshToken(tokenName, storedRawToken, entity.getExpiresAt().toEpochMilli());
+        return new RefreshToken(tokenName, storedRawToken, entity.getExpiresAt().toEpochMilli()-Instant.now().toEpochMilli());
     }
 
     public RefreshTokenEntity getRefreshToken(Long tokenId) {
