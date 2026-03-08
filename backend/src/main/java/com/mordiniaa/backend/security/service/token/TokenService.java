@@ -9,21 +9,31 @@ import com.mordiniaa.backend.security.service.SessionRedisService;
 import com.mordiniaa.backend.security.token.JwtToken;
 import com.mordiniaa.backend.security.token.RefreshToken;
 import com.mordiniaa.backend.security.token.TokenSet;
+import com.mordiniaa.backend.security.utils.JwtUtils;
 import com.mordiniaa.backend.services.auth.SessionService;
 import com.mordiniaa.backend.services.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class TokenService {
+
+    private final JwtUtils jwtUtils;
+    @Value("${security.app.jwt.token-name}")
+    private String jwtTokenName;
+
+    @Value("${security.app.refresh-token.token-name}")
+    private String refreshTokenName;
 
     private final RawTokenService rawTokenService;
     private final RefreshTokenService refreshTokenService;
@@ -75,17 +85,11 @@ public class TokenService {
         String idPart = oldRefreshToken.substring(0, dotIdx);
         String tokenPart = oldRefreshToken.substring(dotIdx + 1);
 
-        long tokenId;
-        try {
-            tokenId = Long.parseLong(idPart);
-        } catch (NumberFormatException e) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
-        }
+        long tokenId = getTokenId(idPart);
 
         Long storedTokenId = sessionRedisService.getTokenIdBySessionId(sessionId);
         if (storedTokenId == null) {
-            storedTokenId = refreshTokenService.getStoredRefreshTokenForSession(sessionId)
-                    .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+            storedTokenId = refreshTokenService.getStoredRefreshTokenForSession(sessionId);
         }
 
         if (tokenId != storedTokenId)
@@ -119,5 +123,39 @@ public class TokenService {
         );
 
         return new TokenSet(jwtToken, refreshToken);
+    }
+
+    public TokenSet deactivateCookies(UUID userId, UUID sessionId, String refreshToken) {
+
+        int dotIdx = refreshToken.indexOf(".");
+        if (dotIdx < 1) throw new RuntimeException(); // TODO: Change in exceptions Section
+
+        String idPart = refreshToken.substring(0, dotIdx);
+        String tokenPart = refreshToken.substring(dotIdx + 1);
+
+        long tokenId = getTokenId(idPart);
+
+        Long storedTokenId = sessionRedisService.getTokenIdBySessionId(sessionId);
+        if (storedTokenId == null) {
+            storedTokenId = refreshTokenService.getStoredRefreshTokenForSession(sessionId);
+        }
+
+        if (tokenId != storedTokenId)
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+
+        JwtToken emptyJwtToken = jwtService.getEmptyToken();
+        RefreshToken emptyRefreshToken = refreshTokenService.deactivateRefreshToken(userId, sessionId, tokenId, tokenPart);
+
+        sessionRedisService.deleteSession(sessionId);
+
+        return new TokenSet(emptyJwtToken, emptyRefreshToken);
+    }
+
+    private Long getTokenId(String tokenId) {
+        try {
+            return Long.parseLong(tokenId);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
     }
 }
