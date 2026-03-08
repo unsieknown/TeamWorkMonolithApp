@@ -55,12 +55,18 @@ public class UserAdminController {
             @RequestParam("a") Long addressId,
             @Valid @RequestBody PatchUserAddressRequest patchUserAddressRequest
     ) {
-        userAdminService.updateUserAddressData(userId,addressId, patchUserAddressRequest);
+        userAdminService.updateUserAddressData(userId, addressId, patchUserAddressRequest);
         return ResponseEntity.ok().build();
     }
 
-    public void updateUserContactData(UUID userId, Long contactId, @Valid @RequestBody PatchUserContactDataRequest patchUserContactDataRequest) {
-
+    @PutMapping("/user-contact")
+    public ResponseEntity<Void> updateUserContactData(
+            @RequestParam("u") UUID userId,
+            @RequestParam("c") Long contactId,
+            @Valid @RequestBody PatchUserContactDataRequest patchUserContactDataRequest
+    ) {
+        userAdminService.updateUserContactData(userId, contactId, patchUserContactDataRequest);
+        return ResponseEntity.ok().build();
     }
 
     public void deactivateUser(UUID userId) {
