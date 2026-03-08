@@ -31,7 +31,7 @@ public class UserAdminController {
         return new ResponseEntity<>(dto, HttpStatus.CREATED);
     }
 
-    @PostMapping("/user-pass")
+    @PutMapping("/user-pass")
     public ResponseEntity<Void> setUserPassword(
             @RequestParam(name = "u") UUID userId,
             @Valid @RequestBody PasswordRequest passwordRequest
@@ -40,12 +40,23 @@ public class UserAdminController {
         return ResponseEntity.ok().build();
     }
 
-    public void updateUserBasicData(UUID userId, @Valid @RequestBody PatchUserDataRequest patchUserDataRequest) {
-
+    @PutMapping("/user-data")
+    public ResponseEntity<Void> updateUserBasicData(
+            @RequestParam(name = "u") UUID userId,
+            @Valid @RequestBody PatchUserDataRequest patchUserDataRequest
+    ) {
+        userAdminService.updateUserBasicData(userId, patchUserDataRequest);
+        return ResponseEntity.ok().build();
     }
 
-    public void updateUserAddressData(UUID userId, Long addressId, @Valid @RequestBody PatchUserAddressRequest patchUserAddressRequest) {
-
+    @PutMapping("/user-address")
+    public ResponseEntity<Void> updateUserAddressData(
+            @RequestParam("u") UUID userId,
+            @RequestParam("a") Long addressId,
+            @Valid @RequestBody PatchUserAddressRequest patchUserAddressRequest
+    ) {
+        userAdminService.updateUserAddressData(userId,addressId, patchUserAddressRequest);
+        return ResponseEntity.ok().build();
     }
 
     public void updateUserContactData(UUID userId, Long contactId, @Valid @RequestBody PatchUserContactDataRequest patchUserContactDataRequest) {
