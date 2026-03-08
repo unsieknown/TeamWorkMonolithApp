@@ -7,6 +7,7 @@ import com.mordiniaa.backend.services.auth.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -61,9 +63,17 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
-    public ResponseEntity<?> signOut() {
-
-        return null;
+    public ResponseEntity<Void> signOut(HttpServletRequest request) {
+        HttpHeaders headers = authService.logout(request)
+                .stream()
+                .collect(
+                        HttpHeaders::new,
+                        (h, c) -> h.add(HttpHeaders.SET_COOKIE, c.toString()),
+                        HttpHeaders::addAll
+                );
+        return ResponseEntity.ok()
+                .headers(headers)
+                .build();
     }
 
     @PostMapping("/refresh")
