@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.services.user;
 
 import com.mordiniaa.backend.models.user.DbUser;
+import com.mordiniaa.backend.models.user.mysql.AppRole;
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.repositories.mongo.user.UserRepresentationRepository;
 import com.mordiniaa.backend.repositories.mysql.UserRepository;
@@ -41,5 +42,10 @@ public class UserService {
                 .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
 
         imagesStorageService.setDefaultImage(user);
+    }
+
+    public User findNonDeletedUserAndAppRole(UUID userId, AppRole appRole) {
+        return userRepository.findUserByUserIdAndDeletedFalseAndRole_AppRole(userId, appRole)
+                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
     }
 }
