@@ -59,11 +59,18 @@ public class TeamAdminController {
         return ResponseEntity.ok().build();
     }
 
-    public void addToTeam(UUID userId, UUID teamId) {
-
-    }
-
-    public void removeFromTeam(UUID userId, UUID teamId) {
-
+    @PutMapping("/{teamId}/user/{userId}")
+    public ResponseEntity<Void> teamMembership(
+            @PathVariable UUID userId,
+            @PathVariable UUID teamId,
+            @RequestParam("op") String op
+    ) {
+        String operation = op.toLowerCase();
+        switch (operation) {
+            case "add" -> teamAdminService.addToTeam(userId, teamId);
+            case "remove" -> teamAdminService.removeFromTeam(userId, teamId);
+            default -> throw new RuntimeException("Unsupported operation"); // TODO: Change In Exceptions Section
+        }
+        return ResponseEntity.ok().build();
     }
 }
