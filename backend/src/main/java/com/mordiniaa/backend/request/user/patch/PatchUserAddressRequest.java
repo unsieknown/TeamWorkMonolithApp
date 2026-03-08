@@ -12,18 +12,22 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PatchUserAddressRequest implements AddressRequest {
 
+    @Pattern(regexp = "^[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż0-9 .'-]+$")
     @Size(min = 5, max = 40)
     private String street;
 
+    @Pattern(regexp = "^[A-Z][a-z]+$")
     @Size(min = 2, max = 30)
     private String city;
 
+    @Pattern(regexp = "^[A-Z][a-z]+$")
     @Size(min = 2, max = 30)
     private String country;
 
     @Pattern(regexp = "\\d{2}-\\d{3}")
     private String zipCode;
 
+    @Pattern(regexp = "^[A-Z][a-z]+$")
     @Size(min = 2, max = 20)
     private String district;
 }
