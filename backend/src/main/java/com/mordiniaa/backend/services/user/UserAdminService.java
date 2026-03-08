@@ -174,6 +174,7 @@ public class UserAdminService {
         contactRepository.save(contact);
     }
 
+    @Transactional
     public void deactivateUser(UUID userId) {
 
         try {

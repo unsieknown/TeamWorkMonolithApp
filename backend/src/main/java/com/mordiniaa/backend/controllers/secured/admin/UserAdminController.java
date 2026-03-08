@@ -25,7 +25,7 @@ public class UserAdminController {
         this.userAdminService = userAdminService;
     }
 
-    @PostMapping("/create-user")
+    @PostMapping
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody CreateUserRequest createUserRequest) {
         UserDto dto = userAdminService.createUser(createUserRequest);
         return new ResponseEntity<>(dto, HttpStatus.CREATED);
@@ -69,7 +69,11 @@ public class UserAdminController {
         return ResponseEntity.ok().build();
     }
 
-    public void deactivateUser(UUID userId) {
-
+    @DeleteMapping
+    public ResponseEntity<Void> deactivateUser(
+            @RequestParam("u") UUID userId
+    ) {
+        userAdminService.deactivateUser(userId);
+        return ResponseEntity.noContent().build();
     }
 }
