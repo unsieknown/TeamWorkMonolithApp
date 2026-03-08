@@ -55,4 +55,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findUserByRole_AppRole(AppRole roleAppRole);
 
     Optional<User> findUserByUserIdAndDeletedFalse(UUID userId);
+
+    Optional<User> findUserByUserIdAndDeletedFalseAndRole_AppRole(UUID userId, AppRole roleAppRole);
 }
