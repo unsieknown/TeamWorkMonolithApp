@@ -30,12 +30,12 @@ public class TeamAdminController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{teamId}")
+    @PutMapping("/{teamId}/manager/{managerId}")
     public ResponseEntity<ApiResponse<TeamShortDto>> assignManagerToTeam(
-            @RequestParam("u") UUID userId,
+            @PathVariable UUID managerId,
             @PathVariable UUID teamId
     ) {
-        TeamShortDto dto = teamAdminService.assignManagerToTeam(userId, teamId);
+        TeamShortDto dto = teamAdminService.assignManagerToTeam(managerId, teamId);
         ApiResponse<TeamShortDto> response = new ApiResponse<>(
                 "Assigned",
                 dto
@@ -43,8 +43,12 @@ public class TeamAdminController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    public void removeManagerFromTeam(UUID teamId) {
-
+    @DeleteMapping("/{teamId}/manager")
+    public ResponseEntity<Void> removeManagerFromTeam(
+            @PathVariable UUID teamId
+    ) {
+        teamAdminService.removeManagerFromTeam(teamId);
+        return ResponseEntity.ok().build();
     }
 
     public void archiveTeam(UUID teamId) {
