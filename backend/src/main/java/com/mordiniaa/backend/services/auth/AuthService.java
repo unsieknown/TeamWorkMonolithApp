@@ -6,12 +6,14 @@ import com.mordiniaa.backend.security.service.JwtService;
 import com.mordiniaa.backend.security.service.token.RefreshTokenService;
 import com.mordiniaa.backend.security.service.token.TokenService;
 import com.mordiniaa.backend.security.service.user.SecurityUser;
+import com.mordiniaa.backend.security.token.JwtToken;
 import com.mordiniaa.backend.security.token.Token;
 import com.mordiniaa.backend.security.token.TokenSet;
 import com.mordiniaa.backend.security.utils.JwtUtils;
 import com.mordiniaa.backend.services.user.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,8 +81,14 @@ public class AuthService {
             throw new RuntimeException(); // TODO: Change In Exceptions Section
         }
 
-        UUID userId = jwtService.extractUserId(claims);
-        UUID sessionId = jwtService.extractSessionId(claims);
+        UUID userId;
+        UUID sessionId;
+        try {
+            userId = jwtService.extractUserId(claims);
+            sessionId = jwtService.extractSessionId(claims);
+        } catch (Exception e) {
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
 
         TokenSet tokenSet = tokenService.refreshToken(
                 userId,
@@ -87,10 +96,37 @@ public class AuthService {
                 refreshToken,
                 request
         );
-        
+
         return createCookieResponse(
                 tokenSet.getJwtToken(),
                 tokenSet.getRefreshToken()
+        );
+    }
+
+    public List<ResponseCookie> logout(HttpServletRequest request) {
+
+        String jwtToken = jwtService.parseJwtTokenFromCookie(request.getCookies());
+        String refreshToken = refreshTokenService.parseRefreshTokenFromCookie(request.getCookies());
+
+        Claims claims = jwtService.parseAllowExpired(jwtToken);
+
+        if (jwtToken == null || refreshToken == null) {
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
+
+        UUID sessionId;
+        UUID userId;
+        try {
+            sessionId = jwtService.extractSessionId(claims);
+            userId = jwtService.extractUserId(claims);
+        } catch (Exception e) {
+            throw new RuntimeException();
+        }
+
+        TokenSet deactivatedTokens = tokenService.deactivateCookies(userId, sessionId, refreshToken);
+        return createCookieResponse(
+                deactivatedTokens.getJwtToken(),
+                deactivatedTokens.getRefreshToken()
         );
     }
 
