@@ -53,10 +53,14 @@ public class UserAdminService {
         if (userRepository.existsUserByFirstNameAndLastName(firstName, lastName))
             throw new RuntimeException();
 
-        String login = generateUniqueLogin(firstName, lastName);
+        String login = request.getUsername() != null
+                ? request.getUsername()
+                : generateUniqueLogin(firstName, lastName);
 
-        Role userRole = roleRepository.findRoleByAppRole(AppRole.ROLE_USER)
-                .orElseThrow(RuntimeException::new); //TODO: Change In Exceptions Section
+        Role userRole = roleRepository.findRoleByAppRole(request.getRole())
+                .orElseGet(() -> roleRepository.findRoleByAppRole(AppRole.ROLE_USER)
+                        .orElseThrow(RuntimeException::new) // TODO: Change In Exceptions Section)
+                );
 
         User newUser = new User();
         newUser.setFirstName(firstName);
