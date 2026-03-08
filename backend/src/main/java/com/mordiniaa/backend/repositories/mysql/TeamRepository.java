@@ -21,4 +21,6 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     List<Team> findAllByManager_UserId(UUID managerUserId);
 
     Optional<Team> findTeamByTeamIdAndManager_UserId(UUID teamId, UUID managerUserId);
+
+    Optional<Team> findTeamByTeamIdAndActiveTrue(UUID teamId);
 }
