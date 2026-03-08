@@ -1,13 +1,15 @@
 package com.mordiniaa.backend.services.team;
 
+import com.mordiniaa.backend.dto.team.TeamShortDto;
+import com.mordiniaa.backend.mappers.team.TeamMapper;
 import com.mordiniaa.backend.models.team.Team;
 import com.mordiniaa.backend.models.user.mysql.AppRole;
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.repositories.mysql.TeamRepository;
-import com.mordiniaa.backend.repositories.mysql.UserRepository;
 import com.mordiniaa.backend.request.team.TeamCreationRequest;
 import com.mordiniaa.backend.services.user.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,14 +20,12 @@ import java.util.UUID;
 public class TeamAdminService {
 
     private final TeamRepository teamRepository;
-    private final UserRepository userRepository;
     private final UserService userService;
     private final TeamService teamService;
+    private final TeamMapper teamMapper;
 
-    //Protected On Method Lvl For ADMIN
     @Transactional
-//    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
-    public void createTeam(TeamCreationRequest teamCreationRequest) {
+    public TeamShortDto createTeam(TeamCreationRequest teamCreationRequest) {
 
         String teamName = teamCreationRequest.getTeamName().trim();
         String lowerTeamName = teamName.toLowerCase();
@@ -35,12 +35,11 @@ public class TeamAdminService {
         Team team = new Team(lowerTeamName);
         team.setPresentationName(teamName);
 
-        teamRepository.save(team);
+        return teamMapper.toShortDto(teamRepository.save(team));
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
-    public void assignManagerToTeam(UUID userId, UUID teamId) {
+    public TeamShortDto assignManagerToTeam(UUID userId, UUID teamId) {
 
         User user = userService.getUser(userId);
 
@@ -59,7 +58,7 @@ public class TeamAdminService {
         }
 
         team.setManager(user);
-        teamRepository.save(team);
+        return teamMapper.toShortDto(teamRepository.save(team));
     }
 
     @Transactional
