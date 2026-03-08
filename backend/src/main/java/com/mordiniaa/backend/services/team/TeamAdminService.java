@@ -6,10 +6,10 @@ import com.mordiniaa.backend.models.team.Team;
 import com.mordiniaa.backend.models.user.mysql.AppRole;
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.repositories.mysql.TeamRepository;
+import com.mordiniaa.backend.repositories.mysql.UserRepository;
 import com.mordiniaa.backend.request.team.TeamCreationRequest;
 import com.mordiniaa.backend.services.user.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +23,7 @@ public class TeamAdminService {
     private final UserService userService;
     private final TeamService teamService;
     private final TeamMapper teamMapper;
+    private final UserRepository userRepository;
 
     @Transactional
     public TeamShortDto createTeam(TeamCreationRequest teamCreationRequest) {
@@ -41,12 +42,10 @@ public class TeamAdminService {
     @Transactional
     public TeamShortDto assignManagerToTeam(UUID userId, UUID teamId) {
 
-        User user = userService.getUser(userId);
+        User user = userService.findNonDeletedUserAndAppRole(userId, AppRole.ROLE_MANAGER);
 
-        if (!user.getRole().getAppRole().equals(AppRole.ROLE_MANAGER))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
-
-        Team team = teamService.getTeam(teamId);
+        Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
+                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
 
         if (team.getManager() != null) {
             User manager = team.getManager();
@@ -62,7 +61,6 @@ public class TeamAdminService {
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
     public void removeManagerFromTeam(UUID teamId) {
 
         Team team = teamService.getTeam(teamId);
@@ -74,22 +72,21 @@ public class TeamAdminService {
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
     public void archiveTeam(UUID teamId) {
 
-        Team team = teamService.getTeam(teamId);
-        if (!team.isActive())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
+                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
 
         team.deactivate();
         teamRepository.save(team);
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
     public void addToTeam(UUID userId, UUID teamId) {
 
-        Team team = teamService.getTeam(teamId);
+        Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
+                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+
         User manager = team.getManager();
         if (manager != null && manager.getUserId().equals(userId))
             throw new RuntimeException(); // TODO: Change In Exceptions Section
@@ -106,7 +103,6 @@ public class TeamAdminService {
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
     public void removeFromTeam(UUID userId, UUID teamId) {
 
         Team team = teamService.getTeam(teamId);
