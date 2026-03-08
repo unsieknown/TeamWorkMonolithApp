@@ -32,6 +32,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class RefreshTokenService {
 
+    private final RefreshTokenFamilyService refreshTokenFamilyService;
     @Value("${security.app.refresh-token.token-name}")
     private String tokenName;
 
@@ -86,12 +87,7 @@ public class RefreshTokenService {
             throw new RuntimeException(); // TODO: Change In Exceptions Section
         }
 
-        boolean valid = MessageDigest.isEqual(
-                sha256Bytes(oldRawToken),
-                Base64.getUrlDecoder().decode(storedTokenEntity.getHashedToken())
-        );
-
-        if (!valid) {
+        if (!validateTokensMatch(oldRawToken, storedTokenEntity.getHashedToken())) {
             log.info("Invalid refresh token");
             throw new RuntimeException();
         }
@@ -158,7 +154,39 @@ public class RefreshTokenService {
         return ResponseCookie.from(tokenName).path("/").build();
     }
 
-    public Optional<Long> getStoredRefreshTokenForSession(UUID sessionId) {
-        return refreshTokenRepository.findTokenIdBySessionId(sessionId);
+    public Long getStoredRefreshTokenForSession(UUID sessionId) {
+        return refreshTokenRepository.findTokenIdBySessionId(sessionId)
+                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+    }
+
+    @Transactional
+    public RefreshToken deactivateRefreshToken(UUID userId, UUID sessionId, Long idPart, String tokenPart) {
+
+        RefreshTokenEntity entity = refreshTokenRepository.findRefreshTokenEntityByIdAndRefreshTokenFamily_UserId(idPart, userId)
+                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+
+        RefreshTokenFamily family = entity.getRefreshTokenFamily();
+        if (!Objects.equals(family.getUserId(), userId)) {
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
+
+        Session session = family.getSession();
+        if (!Objects.equals(session.getSessionId(), sessionId))
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+
+        if (!validateTokensMatch(tokenPart, entity.getHashedToken())) {
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
+
+        refreshTokenFamilyService.deactivateUserAuthenticationFamily(family.getId(), Instant.now());
+
+        return new RefreshToken(tokenName, "", 0);
+    }
+
+    public boolean validateTokensMatch(String rawToken, String storedToken) {
+        return MessageDigest.isEqual(
+                sha256Bytes(rawToken),
+                Base64.getUrlDecoder().decode(storedToken)
+        );
     }
 }
