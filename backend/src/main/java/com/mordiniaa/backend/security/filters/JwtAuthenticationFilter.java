@@ -36,10 +36,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final RefreshTokenService refreshTokenService;
     @Value("${security.app.jwt.token-name}")
     private String jwtTokenName;
 
+    private final RefreshTokenService refreshTokenService;
     private final SessionService sessionService;
     private final SessionRedisService sessionRedisService;
     private final JwtService jwtService;
@@ -65,7 +65,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UUID sessionId = jwtService.extractSessionId(claims);
                 if (!sessionRedisService.validateSession(sessionId)) {
                     if (!sessionService.validateSession(sessionId)) {
-                        System.err.println("DUUUPAAAAA");
                         response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from(jwtTokenName).path("/").build().toString());
                         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenService.clearUserToken().toString());
                         throw new RuntimeException(); // TODO: Change In Exceptions Section
