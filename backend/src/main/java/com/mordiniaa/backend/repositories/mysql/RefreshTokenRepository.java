@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.repositories.mysql;
 
 import com.mordiniaa.backend.security.model.RefreshTokenEntity;
+import com.mordiniaa.backend.security.model.RefreshTokenFamily;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -36,4 +37,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity
                 and rt.refreshTokenFamily.session.sessionId = :sessionId
             """)
     Optional<Long> findTokenIdBySessionId(UUID sessionId);
+
+    Optional<RefreshTokenEntity> findRefreshTokenEntityByIdAndRefreshTokenFamily_UserId(Long id, UUID refreshTokenFamilyUserId);
 }
