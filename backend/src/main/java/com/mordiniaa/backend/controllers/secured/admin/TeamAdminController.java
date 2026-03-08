@@ -51,8 +51,12 @@ public class TeamAdminController {
         return ResponseEntity.ok().build();
     }
 
-    public void archiveTeam(UUID teamId) {
-
+    @PutMapping("/{teamId}/archive")
+    public ResponseEntity<Void> archiveTeam(
+            @PathVariable UUID teamId
+    ) {
+        teamAdminService.archiveTeam(teamId);
+        return ResponseEntity.ok().build();
     }
 
     public void addToTeam(UUID userId, UUID teamId) {
