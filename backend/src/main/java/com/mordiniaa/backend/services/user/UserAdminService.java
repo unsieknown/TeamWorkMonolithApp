@@ -14,11 +14,14 @@ import com.mordiniaa.backend.repositories.mysql.UserRepository;
 import com.mordiniaa.backend.request.user.AddressRequest;
 import com.mordiniaa.backend.request.user.ContactDataRequest;
 import com.mordiniaa.backend.request.user.CreateUserRequest;
+import com.mordiniaa.backend.request.user.PasswordRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserAddressRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserContactDataRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserDataRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +42,7 @@ public class UserAdminService {
     private final UserService userService;
     private final AddressRepository addressRepository;
     private final ContactRepository contactRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserDto createUser(CreateUserRequest request) {
@@ -215,5 +219,22 @@ public class UserAdminService {
         contact.setEmail(r.getEmail().trim());
         contact.setCountryCallingCode(r.getCountryCallingCode().trim());
         contact.setPhoneNumber(r.getPhoneNumber().trim());
+    }
+
+    @Transactional
+    public void setUserPassword(UUID userId, PasswordRequest passwordRequest) {
+
+        User user = userRepository.findUserByUserIdAndDeletedFalse(userId)
+                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+
+        String password = passwordRequest.getPassword();
+        String repeatedPassword = passwordRequest.getRepeatedPassword();
+
+        if (!password.equals(repeatedPassword))
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+
+        String encodedPassword = passwordEncoder.encode(password);
+        user.setPassword(encodedPassword);
+        userRepository.save(user);
     }
 }
