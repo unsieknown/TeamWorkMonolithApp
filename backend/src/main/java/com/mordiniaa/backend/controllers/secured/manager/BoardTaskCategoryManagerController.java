@@ -54,18 +54,26 @@ public class BoardTaskCategoryManagerController {
                         "Created Successfully",
                         dto
                 ),
-                HttpStatus.CREATED
+                HttpStatus.OK
         );
     }
 
     @PutMapping("/reorder")
-    public void reorderTaskCategories(
+    public ResponseEntity<ApiResponse<BoardDetailsDto>> reorderTaskCategories(
             @PathVariable String boardId,
             @RequestParam(name = "t") UUID teamId,
             @RequestParam(name = "p") Integer newPosition,
             @RequestBody TaskCategoryRequest taskCategoryRequest
     ) {
-
+        UUID managerId = authUtils.authenticatedUserId();
+        BoardDetailsDto dto = boardOwnerTaskCategoryService.reorderTaskCategories(managerId, boardId, teamId, taskCategoryRequest, newPosition);
+        return new ResponseEntity<>(
+                new ApiResponse<>(
+                        "Created Successfully",
+                        dto
+                ),
+                HttpStatus.OK
+        );
     }
 
     @DeleteMapping
