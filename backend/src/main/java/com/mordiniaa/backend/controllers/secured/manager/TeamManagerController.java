@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.controllers.secured.manager;
 
+import com.mordiniaa.backend.dto.team.TeamDetailedDto;
 import com.mordiniaa.backend.dto.team.TeamShortDto;
 import com.mordiniaa.backend.payload.ApiResponse;
 import com.mordiniaa.backend.payload.CollectionResponse;
@@ -8,8 +9,10 @@ import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.team.TeamService;
 import com.mordiniaa.backend.utils.PageResult;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.shaded.com.google.protobuf.Api;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,7 +48,17 @@ public class TeamManagerController {
         );
     }
 
-    public void getTeamDetails() {
+    @GetMapping("/{teamId}")
+    public ResponseEntity<ApiResponse<TeamDetailedDto>> getTeamDetails(@PathVariable UUID teamId) {
 
+        UUID managerId = authUtils.authenticatedUserId();
+        TeamDetailedDto detailedDto = teamService.getTeamDetails(teamId, managerId);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Success",
+                        detailedDto
+                )
+        );
     }
 }
