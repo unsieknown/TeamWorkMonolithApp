@@ -77,11 +77,13 @@ public class BoardTaskCategoryManagerController {
     }
 
     @DeleteMapping
-    public void deleteTaskCategory(
+    public ResponseEntity<Void> deleteTaskCategory(
             @PathVariable String boardId,
             @RequestParam(name = "t") UUID teamId,
             @RequestBody TaskCategoryRequest taskCategoryRequest
     ) {
-
+        UUID managerId = authUtils.authenticatedUserId();
+        boardOwnerTaskCategoryService.deleteTaskCategory(managerId, boardId, teamId, taskCategoryRequest);
+        return ResponseEntity.noContent().build();
     }
 }
