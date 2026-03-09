@@ -41,12 +41,21 @@ public class BoardTaskCategoryManagerController {
     }
 
     @PutMapping("/rename")
-    public void renameTaskCategory(
+    public ResponseEntity<ApiResponse<BoardDetailsDto>> renameTaskCategory(
         @PathVariable String boardId,
         @RequestParam(name = "t") UUID teamId,
         @RequestBody TaskCategoryRequest taskCategoryRequest
     ) {
 
+        UUID managerId = authUtils.authenticatedUserId();
+        BoardDetailsDto dto = boardOwnerTaskCategoryService.renameTaskCategory(managerId, boardId, teamId, taskCategoryRequest);
+        return new ResponseEntity<>(
+                new ApiResponse<>(
+                        "Created Successfully",
+                        dto
+                ),
+                HttpStatus.CREATED
+        );
     }
 
     @PutMapping("/reorder")
