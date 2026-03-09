@@ -2,6 +2,7 @@ package com.mordiniaa.backend.request.board;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,5 +20,6 @@ public class BoardCreationRequest {
 
     @NotBlank
     @Size(min = 5, max = 40)
+    @Pattern(regexp = "^\\p{L}+([ -]\\p{L}+)*$")
     private String boardName;
 }
