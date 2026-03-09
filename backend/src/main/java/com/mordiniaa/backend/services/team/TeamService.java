@@ -35,7 +35,6 @@ public class TeamService {
                 .toList();
     }
 
-    //Protected On Method Lvl
     @Transactional(readOnly = true)
     public TeamDetailedDto getTeamDetails(UUID teamId, UUID managerId) {
 
