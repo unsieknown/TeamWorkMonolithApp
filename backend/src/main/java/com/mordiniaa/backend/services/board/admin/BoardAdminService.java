@@ -36,6 +36,10 @@ public class BoardAdminService {
     private final MongoIdUtils mongoIdUtils;
     private final UserService userService;
 
+    /**
+     * Method Called By Event During The Process Of Deactivating User
+     * @param userId Deactivated User To Remove From Board
+     */
     @Transactional
     public void handleUserDeletion(UUID userId) {
 
