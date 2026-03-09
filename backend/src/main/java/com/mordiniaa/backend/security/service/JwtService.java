@@ -23,10 +23,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtService {
 
-    @Value("${security.app.jwt.token-name}")
+    @Value("${security.app.jwt.tokenName}")
     private String tokenName;
 
-    @Value("${security.app.jwt.minutes-of-life}")
+    @Value("${security.app.jwt.minutesOfLife}")
     private long accessTtlMinutes;
 
     @Value("${security.app.jwt.issuer}")

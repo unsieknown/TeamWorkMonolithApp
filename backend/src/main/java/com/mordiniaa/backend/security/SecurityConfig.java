@@ -6,6 +6,7 @@ import com.mordiniaa.backend.security.filters.JwtAuthenticationFilter;
 import com.mordiniaa.backend.security.filters.RateLimitFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -39,12 +40,15 @@ public class SecurityConfig {
                                 .requestMatchers("/api/csrf-token").permitAll()
                                 .requestMatchers(
                                         "/api/v1/auth/user",
-                                        "/api/v1/auth/signout",
-                                        "/api/v1/auth/refresh"
+                                        "/api/v1/auth/signout"
                                 ).hasAnyRole("ADMIN", "MANAGER", "USER")
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/v1/manager/**").hasRole("MANAGER")
-                                .requestMatchers("/api/v1/auth/signin").permitAll()
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/v1/auth/signin",
+                                        "/api/v1/auth/refresh"
+                                ).permitAll()
                                 .requestMatchers("/api/v1/test/**").permitAll()
                                 .anyRequest().authenticated()
                 )

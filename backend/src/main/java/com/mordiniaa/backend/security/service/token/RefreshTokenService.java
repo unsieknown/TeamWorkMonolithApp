@@ -66,10 +66,19 @@ public class RefreshTokenService {
             throw e;
         }
 
-        Instant now = Instant.now();
-        boolean tokenExpired = storedTokenEntity.getExpiresAt().isBefore(now);
+        return rotate(userId, storedTokenEntity, oldRawToken, newRawToken, roles);
+    }
 
-        if (storedTokenEntity.isRevoked() || tokenExpired) {
+    @Transactional
+    public RefreshTokenEntity rotate(UUID userId, RefreshTokenEntity entity, String oldRawToken, String newRawToken, List<String> roles) {
+
+        RefreshTokenFamily family = entity.getRefreshTokenFamily();
+        Session userSession = family.getSession();
+
+        Instant now = Instant.now();
+        boolean tokenExpired = entity.getExpiresAt().isBefore(now);
+
+        if (entity.isRevoked() || tokenExpired) {
             applicationEventPublisher.publishEvent(
                     new DeactivateSessionAndTokensEvent(family.getId(), userSession.getSessionId(), now)
             );
@@ -87,19 +96,19 @@ public class RefreshTokenService {
             throw new RuntimeException(); // TODO: Change In Exceptions Section
         }
 
-        if (!validateTokensMatch(oldRawToken, storedTokenEntity.getHashedToken())) {
+        if (!validateTokensMatch(oldRawToken, entity.getHashedToken())) {
             log.info("Invalid refresh token");
             throw new RuntimeException();
         }
 
-        RefreshTokenEntity newTokenEntity = buildRefreshToken(family, now, storedTokenEntity.getId(), newRawToken, roles);
+        RefreshTokenEntity newTokenEntity = buildRefreshToken(family, now, entity.getId(), newRawToken, roles);
         RefreshTokenEntity savedEntity = refreshTokenRepository.save(newTokenEntity);
 
-        rotateToken(savedEntity.getId(), storedTokenEntity.getId(), now);
+        rotateToken(savedEntity.getId(), entity.getId(), now);
         return savedEntity;
     }
 
-    private void validateSession(Session userSession, HttpServletRequest request) {
+    public void validateSession(Session userSession, HttpServletRequest request) {
 
         String userAgent = request.getHeader("User-Agent");
         if (!Objects.equals(userSession.getUserAgent(), userAgent))

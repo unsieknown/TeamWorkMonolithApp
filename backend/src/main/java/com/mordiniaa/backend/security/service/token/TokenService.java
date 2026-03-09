@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.security.service.token;
 
+import com.mordiniaa.backend.events.authentication.events.SessionMisuseEvent;
 import com.mordiniaa.backend.models.Session;
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.security.model.RefreshTokenEntity;
@@ -9,31 +10,24 @@ import com.mordiniaa.backend.security.service.SessionRedisService;
 import com.mordiniaa.backend.security.token.JwtToken;
 import com.mordiniaa.backend.security.token.RefreshToken;
 import com.mordiniaa.backend.security.token.TokenSet;
-import com.mordiniaa.backend.security.utils.JwtUtils;
 import com.mordiniaa.backend.services.auth.SessionService;
 import com.mordiniaa.backend.services.user.UserService;
+import com.mordiniaa.backend.utils.IpAddrUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class TokenService {
-
-    private final JwtUtils jwtUtils;
-    @Value("${security.app.jwt.token-name}")
-    private String jwtTokenName;
-
-    @Value("${security.app.refresh-token.token-name}")
-    private String refreshTokenName;
 
     private final RawTokenService rawTokenService;
     private final RefreshTokenService refreshTokenService;
@@ -42,6 +36,8 @@ public class TokenService {
     private final UserService userService;
     private final SessionService sessionService;
     private final RefreshTokenFamilyService refreshTokenFamilyService;
+    private final IpAddrUtils ipAddrUtils;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public TokenSet issue(UUID userId, List<String> roles, HttpServletRequest request) {
@@ -69,6 +65,60 @@ public class TokenService {
 
         JwtToken jwtToken = jwtService.buildJwt(
                 userId.toString(),
+                session.getSessionId().toString(),
+                roles
+        );
+
+        return new TokenSet(jwtToken, refreshToken);
+    }
+
+    @Transactional
+    public TokenSet refreshToken(String rawToken, HttpServletRequest request) {
+
+        int dotIdx = rawToken.indexOf(".");
+        if (dotIdx < 1) throw new RuntimeException(); // TODO: Change in exceptions Section
+
+        String idPart = rawToken.substring(0, dotIdx);
+        String tokenPart = rawToken.substring(dotIdx + 1);
+
+        long tokenId = getTokenId(idPart);
+
+        RefreshTokenEntity entity = refreshTokenService.getRefreshToken(tokenId);
+        RefreshTokenFamily family = entity.getRefreshTokenFamily();
+        Session session = family.getSession();
+
+        User user = userService.getUser(family.getUserId());
+        try {
+            refreshTokenService.validateSession(session, request);
+        } catch (Exception e) {
+            applicationEventPublisher.publishEvent(
+                    new SessionMisuseEvent(user.getUserId())
+            );
+            throw e;
+        }
+
+        String newRawToken = rawTokenService.generateOpaqueToken();
+        List<String> roles = List.of(user.getRole().getAppRole().name());
+
+        RefreshTokenEntity storedEntity;
+        try {
+            storedEntity = refreshTokenService.rotate(user.getUserId(), entity, tokenPart, newRawToken, roles);
+        } catch (Exception e) {
+            sessionRedisService.deleteSession(session.getSessionId());
+            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        }
+
+        RefreshToken refreshToken = refreshTokenService.generateRefreshToken(storedEntity, newRawToken);
+
+        Long ttl = Duration.between(Instant.now(), storedEntity.getExpiresAt()).toMillis();
+        sessionRedisService.rotateRefreshToken(
+                session.getSessionId(),
+                storedEntity.getId(),
+                ttl
+        );
+
+        JwtToken jwtToken = jwtService.buildJwt(
+                user.getUserId().toString(),
                 session.getSessionId().toString(),
                 roles
         );
