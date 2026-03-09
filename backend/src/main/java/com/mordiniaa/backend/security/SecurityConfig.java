@@ -43,6 +43,7 @@ public class SecurityConfig {
                                         "/api/v1/auth/refresh"
                                 ).hasAnyRole("ADMIN", "MANAGER", "USER")
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/api/v1/manager/**").hasRole("MANAGER")
                                 .requestMatchers("/api/v1/auth/signin").permitAll()
                                 .requestMatchers("/api/v1/test/**").permitAll()
                                 .anyRequest().authenticated()
