@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.security.filters;
 
+import com.mordiniaa.backend.config.JwtProperties;
 import com.mordiniaa.backend.security.objects.JwtPrincipal;
 import com.mordiniaa.backend.security.service.JwtService;
 import com.mordiniaa.backend.security.service.SessionRedisService;
@@ -36,9 +37,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Value("${security.app.jwt.token-name}")
+    @Value("${security.app.jwt.tokenName}")
     private String jwtTokenName;
 
+    private final JwtProperties jwtProperties;
     private final RefreshTokenService refreshTokenService;
     private final SessionService sessionService;
     private final SessionRedisService sessionRedisService;
@@ -50,6 +52,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+
+        String requestUri = request.getRequestURI();
+        if (jwtProperties.getWhiteList().contains(requestUri)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         SecurityContext context = SecurityContextHolder.getContext();
         if (context.getAuthentication() == null) {
