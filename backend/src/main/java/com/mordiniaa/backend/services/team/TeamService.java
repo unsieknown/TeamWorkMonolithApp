@@ -29,7 +29,6 @@ public class TeamService {
                 .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
     }
 
-    //Protected On Method Lvl
     public List<TeamShortDto> getTeamsForManager(UUID managerId) {
         return teamRepository.findAllByManager_UserId(managerId).stream()
                 .map(teamMapper::toShortDto)
