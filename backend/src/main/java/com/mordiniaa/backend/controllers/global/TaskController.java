@@ -54,4 +54,20 @@ public class TaskController {
                 )
         );
     }
+
+    @DeleteMapping("/{taskId}")
+    public ResponseEntity<ApiResponse<Void>> deleteTaskById(
+            @RequestParam("b") String boardId,
+            @PathVariable String taskId
+    ) {
+        UUID userId = authUtils.authenticatedUserId();
+        taskService.deleteTaskFromBoard(userId, boardId, taskId);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Successfully Created",
+                        null
+                )
+        );
+    }
 }
