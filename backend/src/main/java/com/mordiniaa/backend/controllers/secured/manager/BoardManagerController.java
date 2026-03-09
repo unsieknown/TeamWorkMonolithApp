@@ -1,21 +1,37 @@
 package com.mordiniaa.backend.controllers.secured.manager;
 
+import com.mordiniaa.backend.dto.board.BoardDetailsDto;
+import com.mordiniaa.backend.payload.ApiResponse;
 import com.mordiniaa.backend.request.board.BoardCreationRequest;
 import com.mordiniaa.backend.request.board.PermissionsRequest;
+import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.board.owner.BoardOwnerService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/manager/board")
 public class BoardManagerController {
 
     private final BoardOwnerService boardOwnerService;
+    private final AuthUtils authUtils;
 
-    public BoardManagerController(BoardOwnerService boardOwnerService) {
-        this.boardOwnerService = boardOwnerService;
+    @PostMapping
+    public ResponseEntity<ApiResponse<BoardDetailsDto>> createBoard(@Valid @RequestBody BoardCreationRequest boardCreationRequest) {
+        UUID managerId = authUtils.authenticatedUserId();
+        BoardDetailsDto dto = boardOwnerService.createBoard(managerId, boardCreationRequest);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Created Successfully",
+                        dto
+                )
+        );
     }
 
     public void changeBoardMemberPermissions(@Valid @RequestBody PermissionsRequest permissionsRequest) {
@@ -38,11 +54,6 @@ public class BoardManagerController {
 
     }
 
-    @PostMapping
-    public void createBoard(@Valid @RequestBody BoardCreationRequest boardCreationRequest) {
-
-    }
-
     @PutMapping("/user/{operation}")
     public void addUserToBoard(
             @PathVariable String operation,
@@ -59,6 +70,4 @@ public class BoardManagerController {
     public void deleteBoard(@RequestParam(name = "b") String boardId) {
 
     }
-
-
 }
