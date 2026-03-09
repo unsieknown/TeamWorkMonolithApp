@@ -8,7 +8,6 @@ import com.mordiniaa.backend.request.user.patch.PatchUserContactDataRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserDataRequest;
 import com.mordiniaa.backend.services.user.UserAdminService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
