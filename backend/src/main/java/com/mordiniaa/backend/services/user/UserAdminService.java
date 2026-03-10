@@ -18,7 +18,6 @@ import com.mordiniaa.backend.request.user.PasswordRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserAddressRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserContactDataRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserDataRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
