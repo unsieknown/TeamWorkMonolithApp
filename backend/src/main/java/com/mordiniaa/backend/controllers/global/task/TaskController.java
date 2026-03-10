@@ -1,4 +1,4 @@
-package com.mordiniaa.backend.controllers.global;
+package com.mordiniaa.backend.controllers.global.task;
 
 import com.mordiniaa.backend.dto.task.TaskDetailsDTO;
 import com.mordiniaa.backend.dto.task.TaskShortDto;
