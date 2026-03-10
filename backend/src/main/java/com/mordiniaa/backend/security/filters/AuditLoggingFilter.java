@@ -34,7 +34,6 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        System.out.println(request.getRequestURI());
         long start = System.currentTimeMillis();
         
         try {
