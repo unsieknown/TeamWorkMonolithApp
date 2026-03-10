@@ -55,4 +55,17 @@ public class TaskManagementController {
                 )
         );
     }
+
+    @DeleteMapping("/user/delete")
+    public ResponseEntity<Void> removeUserFromTask(
+            @PathVariable String taskId,
+            @RequestParam("b") String boardId,
+            @RequestParam("u") UUID userToDeleteId
+    ) {
+
+        UUID userId = authUtils.authenticatedUserId();
+        taskManagementService.removeUserFromTask(userId, userToDeleteId, boardId, taskId);
+
+        return ResponseEntity.noContent().build();
+    }
 }
