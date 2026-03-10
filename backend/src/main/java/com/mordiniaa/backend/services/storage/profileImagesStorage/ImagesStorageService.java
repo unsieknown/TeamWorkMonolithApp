@@ -59,7 +59,7 @@ public class ImagesStorageService {
         };
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(meta.getExtension()))
+                .contentType(MediaType.parseMediaType("image/" + meta.getExtension()))
                 .body(body);
     }
 
