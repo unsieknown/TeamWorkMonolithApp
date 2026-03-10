@@ -16,6 +16,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -62,6 +63,7 @@ public class ImagesStorageService {
                 .body(body);
     }
 
+    @Transactional
     public void addProfileImage(DbUser user, MultipartFile file) {
 
         StorageProperties.ProfileImages profileImages = storageProperties.getProfileImages();
@@ -77,42 +79,46 @@ public class ImagesStorageService {
             case "jpeg", "jpg" -> "jpg";
             default -> "png";
         };
-        String storedName = cloudStorageServiceUtils.buildStorageKey().concat(".".concat(ext));
+
+        String newImageName = cloudStorageServiceUtils.buildStorageKey().concat(".".concat(ext));
         String profileImagesPath = profileImages.getPath();
 
         try {
             addImage(
                     profileImagesPath,
-                    storedName,
+                    newImageName,
                     ext,
                     profileImages.getProfileWidth(),
                     profileImages.getProfileHeight(),
                     file
             );
 
-            if (metadata != null) {
-                storageProvider.delete(
-                        profileImagesPath,
-                        metadata.getStoredName()
-                );
-            }
+            ImageMetadata savedMeta = imageMetadataRepository.save(ImageMetadata.builder()
+                    .originalName(originalName)
+                    .storedName(newImageName)
+                    .extension(ext)
+                    .ownerId(user.getUserId())
+                    .size(file.getSize())
+                    .build()
+            );
+
+            updateUserImageKey(user.getUserId(), savedMeta.getId().toHexString());
         } catch (Exception e) {
             if (metadata != null) {
                 imageMetadataRepository.save(metadata);
+                updateUserImageKey(user.getUserId(), metadata.getId().toHexString());
+            } else {
+                updateUserImageKey(user.getUserId(), profileImages.getDefaultImageKey());
             }
             throw new RuntimeException(e);
         }
 
-        ImageMetadata savedMeta = imageMetadataRepository.save(ImageMetadata.builder()
-                .originalName(originalName)
-                .storedName(storedName)
-                .ownerId(user.getUserId())
-                .extension(file.getContentType())
-                .size(file.getSize())
-                .build()
-        );
-
-        updateUserImageKey(user.getUserId(), savedMeta.getId().toHexString());
+        if (metadata != null) {
+            storageProvider.delete(
+                    profileImagesPath,
+                    metadata.getStoredName()
+            );
+        }
     }
 
     public void addImage(String profileImagesPath, String storedName, String ext, int width, int height, MultipartFile file) {
@@ -130,15 +136,20 @@ public class ImagesStorageService {
             uploaded = true;
         } catch (Exception e) {
             if (uploaded) {
-                storageProvider.delete(
-                        profileImagesPath,
-                        storedName
-                );
+                removeImage(profileImagesPath, storedName);
             }
             throw new RuntimeException(e); //TODO: Change In Exceptions Section
         }
     }
 
+    private void removeImage(String profileImagesPath, String storedName) {
+        storageProvider.delete(
+                profileImagesPath,
+                storedName
+        );
+    }
+
+    @Transactional
     public void setDefaultImage(DbUser user) {
 
         ImageMetadata metadata = imageMetadataRepository.findImageMetadataByOwnerId(user.getUserId())
@@ -155,7 +166,8 @@ public class ImagesStorageService {
             imageMetadataRepository.deleteById(metadata.getId());
     }
 
-    private void updateUserImageKey(UUID userId, String imageKey) {
+    @Transactional
+    public void updateUserImageKey(UUID userId, String imageKey) {
 
         userRepository.updateImageKeyByUserId(imageKey, userId);
         applicationEventPublisher.publishEvent(
