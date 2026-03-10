@@ -57,4 +57,22 @@ public class TaskActivityController {
                 )
         );
     }
+
+    @PutMapping("/comment")
+    public ResponseEntity<ApiResponse<TaskDetailsDTO>> updateComment(
+            @PathVariable String taskId,
+            @RequestParam("b") String boardId,
+            @Valid @RequestBody UploadCommentRequest updateTaskPositionRequest
+    ) {
+
+        UUID userId = authUtils.authenticatedUserId();
+
+        TaskDetailsDTO dto = taskActivityService.updateComment(userId, boardId, taskId, updateTaskPositionRequest);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Commented Successfully",
+                        dto
+                )
+        );
+    }
 }
