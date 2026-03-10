@@ -6,10 +6,7 @@ import com.mordiniaa.backend.services.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
@@ -30,6 +27,20 @@ public class ProfileImageController {
         return new ResponseEntity<>(
                 new ApiResponse<>(
                         "Added Image Successfully",
+                        null
+                ),
+                HttpStatus.CREATED
+        );
+    }
+
+    @PutMapping("/default")
+    public ResponseEntity<ApiResponse<Void>> setDefaultImage() {
+
+        UUID userId = authUtils.authenticatedUserId();
+        userService.setDefaultProfileImage(userId);
+        return new ResponseEntity<>(
+                new ApiResponse<>(
+                        "Image Set Successfully",
                         null
                 ),
                 HttpStatus.CREATED
