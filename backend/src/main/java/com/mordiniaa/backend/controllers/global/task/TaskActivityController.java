@@ -70,7 +70,25 @@ public class TaskActivityController {
         TaskDetailsDTO dto = taskActivityService.updateComment(userId, boardId, taskId, updateTaskPositionRequest);
         return ResponseEntity.ok(
                 new ApiResponse<>(
-                        "Commented Successfully",
+                        "Updated Successfully",
+                        dto
+                )
+        );
+    }
+
+    @DeleteMapping("/comment/{commentId}")
+    public ResponseEntity<ApiResponse<TaskDetailsDTO>> deleteComment(
+            @PathVariable String taskId,
+            @PathVariable UUID commentId,
+            @RequestParam("b") String boardId
+    ) {
+
+        UUID userId = authUtils.authenticatedUserId();
+
+        TaskDetailsDTO dto = taskActivityService.deleteComment(userId, boardId, taskId, commentId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Deleted Successfully",
                         dto
                 )
         );
