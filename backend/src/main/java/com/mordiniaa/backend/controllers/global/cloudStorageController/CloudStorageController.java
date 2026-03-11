@@ -7,6 +7,7 @@ import com.mordiniaa.backend.payload.PageMeta;
 import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceCreateResource;
 import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceGetResource;
+import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceMoveResource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,12 +26,13 @@ public class CloudStorageController {
     private final AuthUtils authUtils;
     private final CloudStorageServiceCreateResource cloudStorageServiceCreateResource;
     private final CloudStorageServiceGetResource cloudStorageServiceGetResource;
+    private final CloudStorageServiceMoveResource cloudStorageServiceMoveResource;
 
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<Void>> upload(
             @RequestBody MultipartFile file,
             @RequestParam(value = "parentId", required = false) UUID parentId
-            ) {
+    ) {
 
         UUID userId = authUtils.authenticatedUserId();
         cloudStorageServiceCreateResource.uploadFile(userId, parentId, file);
@@ -101,12 +103,25 @@ public class CloudStorageController {
     }
 
     @PutMapping("/move")
-    public void moveResource(
-            @RequestParam("from") UUID from,
-            @RequestParam("to") UUID to,
+    public ResponseEntity<ApiResponse<Void>> moveResource(
+            @RequestParam(value = "from", required = false) UUID from,
+            @RequestParam(value = "to", required = false) UUID to,
             @RequestParam("direction") String direction
     ) {
 
+        UUID userId = authUtils.authenticatedUserId();
+        if (direction.equals("down"))
+            cloudStorageServiceMoveResource.moveResourceDown(from, to, userId);
+        else if (direction.equals("up"))
+            cloudStorageServiceMoveResource.moveResourceUp(from, to, userId);
+        else throw new RuntimeException("Unsupported Operation");
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Resource Moved Successfully",
+                        null
+                )
+        );
     }
 
     @DeleteMapping("/{nodeId}")
