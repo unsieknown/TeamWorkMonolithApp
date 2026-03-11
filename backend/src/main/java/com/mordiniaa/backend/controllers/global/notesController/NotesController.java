@@ -45,13 +45,15 @@ public class NotesController {
     @GetMapping
     public ResponseEntity<CollectionResponse<NoteDto>> fetchAllNotesForUser(
             @RequestParam(name = "pn", required = false, defaultValue = NotesConstants.PAGE_NUMBER) @PositiveOrZero int pageNumber,
-            @RequestParam(name = "ps", required = false, defaultValue = NotesConstants.PAGE_SIZE) @Positive @Max(0) int pageSize,
+            @RequestParam(name = "ps", required = false, defaultValue = NotesConstants.PAGE_SIZE) @Positive @Max(50) int pageSize,
             @RequestParam(name = "pso", required = false, defaultValue = NotesConstants.SORT_ORDER) String sortOrder,
             @RequestParam(name = "psk", required = false, defaultValue = "updatedAt") String sortKey,
             @RequestParam(name = "key", required = false, defaultValue = "") String keyword
     ) {
-        PageResult<List<NoteDto>> result = notesService.fetchAllNotesForUser(UUID.randomUUID(), //TODO: Get id from user in security section
-                pageNumber, pageSize, sortOrder, sortKey, keyword);
+        UUID userId = authUtils.authenticatedUserId();
+        PageResult<List<NoteDto>> result = notesService.fetchAllNotesForUser(
+                userId, pageNumber, pageSize, sortOrder, sortKey, keyword
+        );
         return ResponseEntity.ok(new CollectionResponse<>(result.getData(), result.getPageMeta()));
     }
 
