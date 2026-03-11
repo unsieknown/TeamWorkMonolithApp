@@ -1,14 +1,19 @@
 package com.mordiniaa.backend.controllers.global.cloudStorageController;
 
+import com.mordiniaa.backend.dto.file.FileNodeDto;
 import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.CollectionResponse;
+import com.mordiniaa.backend.payload.PageMeta;
 import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceCreateResource;
+import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceGetResource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -18,6 +23,7 @@ public class CloudStorageController {
 
     private final AuthUtils authUtils;
     private final CloudStorageServiceCreateResource cloudStorageServiceCreateResource;
+    private final CloudStorageServiceGetResource cloudStorageServiceGetResource;
 
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<Void>> upload(
@@ -55,13 +61,39 @@ public class CloudStorageController {
         );
     }
 
-    @GetMapping("/details/{nodeId}")
-    public void getResourceDetails() {
+    @GetMapping("/list")
+    public ResponseEntity<CollectionResponse<FileNodeDto>> getResourceList(
+            @RequestParam(value = "node", required = false) UUID nodeId
+    ) {
 
+        UUID userId = authUtils.authenticatedUserId();
+
+        List<FileNodeDto> nodes;
+        if (nodeId == null) {
+            nodes = cloudStorageServiceGetResource.getResourceListRootLvl(userId);
+        } else {
+            nodes = cloudStorageServiceGetResource.getResourceList(userId, nodeId);
+        }
+
+        PageMeta pageMeta = new PageMeta();
+        pageMeta.setTotalPages(1);
+        pageMeta.setPage(0);
+        pageMeta.setSize(nodes.size());
+        pageMeta.setLastPage(true);
+        pageMeta.setTotalItems(nodes.size());
+
+        return ResponseEntity.ok(
+                new CollectionResponse<>(
+                        nodes,
+                        pageMeta
+                )
+        );
     }
 
-    @GetMapping("/list/{nodeId}")
-    public void getResourceList() {
+    @GetMapping("/details/{nodeId}")
+    public void getResourceDetails(
+            @RequestParam("node") UUID nodeId
+    ) {
 
     }
 
