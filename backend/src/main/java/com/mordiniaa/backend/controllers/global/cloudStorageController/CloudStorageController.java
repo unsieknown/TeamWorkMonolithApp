@@ -36,4 +36,51 @@ public class CloudStorageController {
                 HttpStatus.CREATED
         );
     }
+
+    @PostMapping("/create")
+    public ResponseEntity<ApiResponse<Void>> createDir(
+            @RequestParam(value = "parentId", required = false) UUID parentId,
+            @RequestParam("dirName") String dirName
+    ) {
+
+        UUID userId = authUtils.authenticatedUserId();
+        cloudStorageServiceCreateResource.createDir(userId, parentId, dirName);
+
+        return new ResponseEntity<>(
+                new ApiResponse<>(
+                        "Directory Created",
+                        null
+                ),
+                HttpStatus.CREATED
+        );
+    }
+
+    @GetMapping("/details/{nodeId}")
+    public void getResourceDetails() {
+
+    }
+
+    @GetMapping("/list/{nodeId}")
+    public void getResourceList() {
+
+    }
+
+    @GetMapping("/download/{nodeId}")
+    public void downloadResource() {
+
+    }
+
+    @PutMapping("/move")
+    public void moveResource(
+            @RequestParam("from") UUID from,
+            @RequestParam("to") UUID to,
+            @RequestParam("direction") String direction
+    ) {
+
+    }
+
+    @DeleteMapping("/{nodeId}")
+    public void deleteResource() {
+
+    }
 }
