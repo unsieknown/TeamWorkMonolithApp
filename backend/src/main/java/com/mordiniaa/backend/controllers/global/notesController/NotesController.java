@@ -32,9 +32,11 @@ public class NotesController {
 
     @GetMapping("/{noteId}")
     public ResponseEntity<ApiResponse<NoteDto>> getNoteById(@PathVariable String noteId) {
+
+        UUID userId = authUtils.authenticatedUserId();
         return notesService.getNoteById(
                         noteId,
-                        UUID.randomUUID() //TODO: Get id from user in security section
+                        userId
                 )
                 .map(dto -> ResponseEntity.ok(new ApiResponse<>("Success", dto)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -68,7 +70,6 @@ public class NotesController {
             CreateNoteRequest createNoteRequest
     ) {
 
-        System.out.println(createNoteRequest);
         UUID userId = authUtils.authenticatedUserId();
         NoteDto dto = notesService.createNote(userId, createNoteRequest);
         return new ResponseEntity<>(
