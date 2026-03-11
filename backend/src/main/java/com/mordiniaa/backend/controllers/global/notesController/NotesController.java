@@ -4,12 +4,16 @@ import com.mordiniaa.backend.config.NotesConstants;
 import com.mordiniaa.backend.dto.note.NoteDto;
 import com.mordiniaa.backend.payload.ApiResponse;
 import com.mordiniaa.backend.payload.CollectionResponse;
+import com.mordiniaa.backend.request.note.CreateNoteRequest;
+import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.notes.NotesService;
 import com.mordiniaa.backend.utils.PageResult;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +28,7 @@ import java.util.UUID;
 public class NotesController {
 
     private final NotesService notesService;
+    private final AuthUtils authUtils;
 
     @GetMapping("/{noteId}")
     public ResponseEntity<ApiResponse<NoteDto>> getNoteById(@PathVariable String noteId) {
@@ -57,8 +62,22 @@ public class NotesController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<NoteDto>> createNote(@RequestBody NoteDto noteDto) {
-        return null;
+    public ResponseEntity<ApiResponse<NoteDto>> createNote(
+            @Valid
+            @RequestBody
+            CreateNoteRequest createNoteRequest
+    ) {
+
+        System.out.println(createNoteRequest);
+        UUID userId = authUtils.authenticatedUserId();
+        NoteDto dto = notesService.createNote(userId, createNoteRequest);
+        return new ResponseEntity<>(
+                new ApiResponse<>(
+                        "Note Created Successfully",
+                        dto
+                ),
+                HttpStatus.CREATED
+        );
     }
 
     @PutMapping("/{noteId}")
