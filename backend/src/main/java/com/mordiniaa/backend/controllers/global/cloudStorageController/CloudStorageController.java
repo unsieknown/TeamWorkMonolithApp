@@ -6,6 +6,7 @@ import com.mordiniaa.backend.payload.CollectionResponse;
 import com.mordiniaa.backend.payload.PageMeta;
 import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceCreateResource;
+import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceDeleteResource;
 import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceGetResource;
 import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceMoveResource;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class CloudStorageController {
     private final CloudStorageServiceCreateResource cloudStorageServiceCreateResource;
     private final CloudStorageServiceGetResource cloudStorageServiceGetResource;
     private final CloudStorageServiceMoveResource cloudStorageServiceMoveResource;
+    private final CloudStorageServiceDeleteResource cloudStorageServiceDeleteResource;
 
     @PostMapping("/upload")
     public ResponseEntity<ApiResponse<Void>> upload(
@@ -125,7 +127,10 @@ public class CloudStorageController {
     }
 
     @DeleteMapping("/{nodeId}")
-    public void deleteResource() {
+    public ResponseEntity<Void> deleteResource(@PathVariable UUID nodeId) {
+        UUID userId = authUtils.authenticatedUserId();
+        cloudStorageServiceDeleteResource.deleteFileNode(userId, nodeId);
 
+        return ResponseEntity.noContent().build();
     }
 }
