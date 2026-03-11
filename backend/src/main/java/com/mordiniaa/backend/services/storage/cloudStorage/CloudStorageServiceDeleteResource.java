@@ -7,12 +7,14 @@ import com.mordiniaa.backend.repositories.mysql.UserStorageRepository;
 import com.mordiniaa.backend.services.storage.StorageProvider;
 import com.mordiniaa.backend.utils.CloudStorageServiceUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CloudStorageServiceDeleteResource {
@@ -59,12 +61,15 @@ public class CloudStorageServiceDeleteResource {
         List<FileNodeUserMeta> deletedNodes = fileNodeRepository
                 .findFileNodesByDeletedTrue();
 
+        log.info("Deleting {} files", deletedNodes.size());
+
         List<String> keysToDelete = new ArrayList<>();
         Set<UUID> idsToDelete = new HashSet<>();
 
         for (FileNodeUserMeta meta : deletedNodes) {
             idsToDelete.add(meta.getId());
             if (!meta.getNodeType().equals(NodeType.DIRECTORY) && meta.getStorageKey() != null) {
+                log.info("Deleting file: {}, id: {}", meta.getStorageKey(), meta.getId());
                 keysToDelete.add(meta.getStorageKey());
                 continue;
             }
@@ -88,6 +93,7 @@ public class CloudStorageServiceDeleteResource {
             }
         }
 
+        log.info("Keys to Delete: {}", keysToDelete);
         keysToDelete.forEach(key -> storageProvider.delete(
                 storageProperties.getCloudStorage().getPath(),
                 key
