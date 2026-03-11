@@ -54,7 +54,7 @@ public class FileNode extends BaseEntity {
     @Column(name = "deleted", nullable = false)
     private boolean deleted = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_storage_id", referencedColumnName = "resource_id")
     private UserStorage userStorage;
 
