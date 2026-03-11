@@ -46,6 +46,7 @@ public class CloudStorageServiceGetResource {
                 .toList();
     }
 
+    @Transactional
     public List<FileNodeDto> getResourceList(UUID userId, UUID dirId) {
 
         FileNode requestedDir = fileNodeRepository.findDirByIdAndOwnerId(dirId, userId)
