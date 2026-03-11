@@ -75,7 +75,7 @@ public interface FileNodeRepository extends JpaRepository<FileNode, UUID> {
             """)
     List<FileNodeUserMeta> findFileNodesByDeletedTrue();
 
-    List<FileNode> findFileNodesByParentIdAndUserStorage_UserId(UUID parentId, UUID userStorageUserId);
+    List<FileNode> findFileNodesByParentIdAndUserStorage_UserIdAndDeletedFalse(UUID parentId, UUID userStorageUserId);
 
     @Query("""
             select fn
