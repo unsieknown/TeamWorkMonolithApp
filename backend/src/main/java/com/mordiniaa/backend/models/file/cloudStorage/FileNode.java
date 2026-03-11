@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.io.File;
 import java.nio.file.FileSystem;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 @Entity(name = "FileNode")
 @Table(name = "file_nodes")
@@ -69,6 +71,10 @@ public class FileNode extends BaseEntity {
         if (parentPath == null) {
             throw new RuntimeException();
         }
-        this.materializedPath = parentPath + FileSystems.getDefault().getSeparator() + this.id;
+
+        if (parent.getNodeType().equals(NodeType.ROOT))
+            this.materializedPath = parentPath + this.id;
+        else
+            this.materializedPath = parentPath + FileSystems.getDefault().getSeparator() + this.id;
     }
 }
