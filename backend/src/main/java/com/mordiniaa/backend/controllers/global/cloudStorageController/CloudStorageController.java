@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 import java.util.UUID;
@@ -90,16 +91,13 @@ public class CloudStorageController {
         );
     }
 
-    @GetMapping("/details/{nodeId}")
-    public void getResourceDetails(
-            @RequestParam("node") UUID nodeId
+    @GetMapping("/download/{nodeId}")
+    public ResponseEntity<StreamingResponseBody> downloadResource(
+            @PathVariable UUID nodeId
     ) {
 
-    }
-
-    @GetMapping("/download/{nodeId}")
-    public void downloadResource() {
-
+        UUID userId = authUtils.authenticatedUserId();
+        return cloudStorageServiceGetResource.downloadResource(userId, nodeId);
     }
 
     @PutMapping("/move")
