@@ -23,7 +23,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CloudStorageServiceCreateResource {
 
-    private final FileNodeService fileNodeService;
     private final StorageProvider storageProvider;
     private final FileNodeRepository fileNodeRepository;
     private final UserStorageRepository userStorageRepository;
@@ -38,7 +37,7 @@ public class CloudStorageServiceCreateResource {
 
         UserStorage userStorage = cloudStorageServiceUtils.getOrCreateUserStorage(userId);
 
-        FileNode parent = getParentNode(userId, parentId, userStorage);
+        FileNode parent = cloudStorageServiceUtils.getParentNode(userId, parentId, userStorage);
         FileNode dirNode = new FileNode(NodeType.DIRECTORY);
         if (parent != null) {
             dirNode.setParentId(parent.getId());
@@ -49,20 +48,6 @@ public class CloudStorageServiceCreateResource {
         dirNode.setUserStorage(userStorage);
         dirNode.setStorageKey(null);
         fileNodeRepository.save(dirNode);
-    }
-
-    private FileNode getParentNode(UUID userId, UUID parentId, UserStorage userStorage) {
-        FileNode parent;
-        if (parentId == null) {
-            parent = userStorage.getRootNode();
-        } else {
-            parent = fileNodeService.getDirectory(parentId, userId);
-            if (parent == null) {
-                log.error("Parent Node Not Found");
-                throw new RuntimeException("Parent Node Not Found"); // TODO: Change In Exceptions Section
-            }
-        }
-        return parent;
     }
 
     @Transactional
@@ -82,7 +67,7 @@ public class CloudStorageServiceCreateResource {
         if (usedSize > userStorage.getQuotaBytes())
             throw new RuntimeException(); // TODO: Change In Exceptions Section
 
-        FileNode parent = getParentNode(userId, parentId, userStorage);
+        FileNode parent = cloudStorageServiceUtils.getParentNode(userId, parentId, userStorage);
 
         String storageKey = cloudStorageServiceUtils.buildStorageKey();
 
