@@ -1,14 +1,32 @@
 package com.mordiniaa.backend.request.note;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.mordiniaa.backend.models.note.regular.RegularNote;
+import com.mordiniaa.backend.request.note.deadline.CreateDeadlineNoteRequest;
+import com.mordiniaa.backend.request.note.deadline.DeadlineNoteRequest;
+import com.mordiniaa.backend.request.note.regular.CreateRegularNoteRequest;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
+
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = CreateRegularNoteRequest.class, name = "REGULAR"),
+        @JsonSubTypes.Type(value = CreateDeadlineNoteRequest.class, name = "DEADLINE")
+})
 public class CreateNoteRequest implements NoteRequest {
 
     @NotBlank(message = "Title is required")
