@@ -40,7 +40,7 @@ public class CloudStorageServiceGetResource {
             return List.of();
         }
 
-        return fileNodeRepository.findFileNodesByParentIdAndUserStorage_UserId(rootNode.getId(), userId)
+        return fileNodeRepository.findFileNodesByParentIdAndUserStorage_UserIdAndDeletedFalse(rootNode.getId(), userId)
                 .stream()
                 .map(node -> fileNodeMapper.toDto(node, "/"))
                 .toList();
@@ -73,7 +73,7 @@ public class CloudStorageServiceGetResource {
         }
 
         String path = sb.toString();
-        return fileNodeRepository.findFileNodesByParentIdAndUserStorage_UserId(requestedDir.getId(), userId)
+        return fileNodeRepository.findFileNodesByParentIdAndUserStorage_UserIdAndDeletedFalse(requestedDir.getId(), userId)
                 .stream()
                 .map(node -> fileNodeMapper.toDto(node, path))
                 .toList();
