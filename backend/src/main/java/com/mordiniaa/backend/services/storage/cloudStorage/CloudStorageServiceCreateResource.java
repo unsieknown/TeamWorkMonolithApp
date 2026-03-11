@@ -10,6 +10,7 @@ import com.mordiniaa.backend.services.fileNode.FileNodeService;
 import com.mordiniaa.backend.services.storage.StorageProvider;
 import com.mordiniaa.backend.utils.CloudStorageServiceUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CloudStorageServiceCreateResource {
@@ -66,9 +68,16 @@ public class CloudStorageServiceCreateResource {
         if (usedSize > userStorage.getQuotaBytes())
             throw new RuntimeException(); // TODO: Change In Exceptions Section
 
-        FileNode parent = fileNodeService.getDirectory(parentId, userId);
-        if (parent != null && !parent.getNodeType().equals(NodeType.DIRECTORY))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        FileNode parent;
+        if (parentId == null) {
+            parent = userStorage.getRootNode();
+        } else {
+            parent = fileNodeService.getDirectory(parentId, userId);
+            if (parent == null) {
+                log.error("Parent Node Not Found");
+                throw new RuntimeException("Parent Node Not Found"); // TODO: Change In Exceptions Section
+            }
+        }
 
         String storageKey = cloudStorageServiceUtils.buildStorageKey();
 
