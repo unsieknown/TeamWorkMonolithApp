@@ -57,14 +57,6 @@ public class NotesController {
         return ResponseEntity.ok(new CollectionResponse<>(result.getData(), result.getPageMeta()));
     }
 
-    @GetMapping("/autocomplete")
-    public ResponseEntity<CollectionResponse<NoteDto>> getAutocompleteSuggestions(
-            @RequestParam(name = "pn", required = false, defaultValue = NotesConstants.PAGE_NUMBER) int pageNumber,
-            @RequestParam(name = "key", required = false, defaultValue = "") String keyword
-    ) {
-        return null;
-    }
-
     @PostMapping
     public ResponseEntity<ApiResponse<NoteDto>> createNote(
             @Valid
@@ -90,6 +82,9 @@ public class NotesController {
 
     @DeleteMapping("/{noteId}")
     public ResponseEntity<Void> deleteNodeById(@PathVariable String noteId) {
-        return null;
+
+        UUID userId = authUtils.authenticatedUserId();
+        notesService.deleteNote(userId, noteId);
+        return ResponseEntity.noContent().build();
     }
 }
