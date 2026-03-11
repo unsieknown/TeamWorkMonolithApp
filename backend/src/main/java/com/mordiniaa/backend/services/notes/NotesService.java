@@ -64,7 +64,7 @@ public class NotesService {
 
         Page<Note> page =
                 (keyword != null && !keyword.isBlank())
-                        ? notesRepository.findAllByOwnerId(
+                        ? notesRepository.findAllByOwnerIdAndArchivedFalse(
                         ownerId,
                         pageable,
                         TextCriteria.forDefaultLanguage().caseSensitive(false).matching(keyword))
