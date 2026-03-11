@@ -67,7 +67,8 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         "/api/v1/auth/user",
                                         "/api/v1/auth/signout",
-                                        "/api/v1/user/image/**"
+                                        "/api/v1/user/image/**",
+                                        "/api/v1/storage/resource/**"
                                 ).hasAnyRole("ADMIN", "MANAGER", "USER")
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/v1/manager/**").hasRole("MANAGER")
