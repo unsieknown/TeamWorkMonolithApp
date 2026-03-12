@@ -99,11 +99,13 @@ storage:
 security:
   app:
     jwt:
-      token-name: TEAMWORK-ACCESS
+      tokenName: TEAMWORK-ACCESS
       issuer: teamwork-backend
       audience: teamwork-frontend
       secret: testSecret1dkWhat1amwr1t1ngDrinkMilkBeHealthy
-      minutes-of-life: 15
+      minutesOfLife: 15
+      whiteList:
+        - /api/v1/auth/refresh
     refresh-token:
       token-name: TEAMWORK-REFRESH
       validity-days: 30
