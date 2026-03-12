@@ -1,5 +1,7 @@
 package com.mordiniaa.backend.security;
 
+import com.mordiniaa.backend.security.exceptions.AccessDeniedExceptionHandler;
+import com.mordiniaa.backend.security.exceptions.JwtAuthEntryPoint;
 import com.mordiniaa.backend.security.filters.AuditLoggingFilter;
 import com.mordiniaa.backend.security.filters.IpBlockFilter;
 import com.mordiniaa.backend.security.filters.JwtAuthenticationFilter;
@@ -56,12 +58,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, AuditLoggingFilter auditLoggingFilter, RateLimitFilter rateLimitFilter, IpBlockFilter ipBlockFilter) throws Exception {
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, AuditLoggingFilter auditLoggingFilter, RateLimitFilter rateLimitFilter, IpBlockFilter ipBlockFilter, JwtAuthEntryPoint jwtAuthEntryPoint, AccessDeniedExceptionHandler accessDeniedExceptionHandler) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
+                .anonymous(AbstractHttpConfigurer::disable)
                 .csrf(csrf ->
                         csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                                 .ignoringRequestMatchers("/sockjs/**")
@@ -69,6 +72,10 @@ public class SecurityConfig {
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(config -> config
+                        .authenticationEntryPoint(jwtAuthEntryPoint)
+                        .accessDeniedHandler(accessDeniedExceptionHandler)
+                )
                 .authorizeHttpRequests(requests ->
                         requests
                                 .requestMatchers("/api/csrf-token").permitAll()
