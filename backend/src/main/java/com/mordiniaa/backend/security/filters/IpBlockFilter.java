@@ -33,6 +33,8 @@ public class IpBlockFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        response.setStatus(403);
+
+        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+        return;
     }
 }

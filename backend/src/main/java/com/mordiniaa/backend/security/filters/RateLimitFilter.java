@@ -49,12 +49,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         if (requests <= 300) {
-            response.setStatus(429);
+            response.sendError(429);
             return;
         }
 
         if (requests <= 500) {
-            response.setStatus(429);
+            response.sendError(429);
             return;
         }
 

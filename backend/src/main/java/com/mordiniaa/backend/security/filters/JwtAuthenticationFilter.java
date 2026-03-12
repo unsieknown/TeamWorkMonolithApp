@@ -101,8 +101,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 context.setAuthentication(authenticationToken);
             } catch (JwtException e) {
-                filterChain.doFilter(request, response);
-                return;
+                throw new RuntimeException("Invalid JWT Token"); // TODO: Change In Exceptions Section
             }
         }
         filterChain.doFilter(request, response);
