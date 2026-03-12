@@ -57,4 +57,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findUserByUserIdAndDeletedFalse(UUID userId);
 
     Optional<User> findUserByUserIdAndDeletedFalseAndRole_AppRole(UUID userId, AppRole roleAppRole);
+
+    Optional<User> findUserByUsernameAndDeletedFalse(String username);
 }
