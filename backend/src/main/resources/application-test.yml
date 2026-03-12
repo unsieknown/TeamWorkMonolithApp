@@ -68,6 +68,16 @@ spring:
       audit:
         name: test-audit-topic
         group-name: test-audit-group
+  #EMAIL
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_ADDR}
+    password: ${MAIL_PASSWD}
+    protocol: smtp
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 logging:
   level:
     org:
