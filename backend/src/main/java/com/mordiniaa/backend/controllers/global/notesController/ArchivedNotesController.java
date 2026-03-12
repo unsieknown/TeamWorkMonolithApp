@@ -2,6 +2,7 @@ package com.mordiniaa.backend.controllers.global.notesController;
 
 import com.mordiniaa.backend.config.NotesConstants;
 import com.mordiniaa.backend.dto.note.NoteDto;
+import com.mordiniaa.backend.payload.ApiResponse;
 import com.mordiniaa.backend.payload.CollectionResponse;
 import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.notes.ArchivedNotesService;
@@ -37,7 +38,15 @@ public class ArchivedNotesController {
     }
 
     @PutMapping("/{noteId}")
-    public ResponseEntity<Void> switchArchived(@PathVariable String noteId) {
-        return null;
+    public ResponseEntity<ApiResponse<Void>> switchArchived(@PathVariable String noteId) {
+
+        UUID userId = authUtils.authenticatedUserId();
+        archivedNotesService.switchArchivedNoteForUser(userId, noteId);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Archive Status Switched Successfully",
+                        null
+                )
+        );
     }
 }
