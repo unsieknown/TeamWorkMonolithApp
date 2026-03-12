@@ -5,6 +5,7 @@ import com.mordiniaa.backend.dto.note.NoteDto;
 import com.mordiniaa.backend.payload.ApiResponse;
 import com.mordiniaa.backend.payload.CollectionResponse;
 import com.mordiniaa.backend.request.note.CreateNoteRequest;
+import com.mordiniaa.backend.request.note.PatchNoteRequest;
 import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.notes.NotesService;
 import com.mordiniaa.backend.utils.PageResult;
@@ -76,8 +77,18 @@ public class NotesController {
     }
 
     @PutMapping("/{noteId}")
-    public ResponseEntity<ApiResponse<NoteDto>> updateNote(@PathVariable String noteId, @RequestBody NoteDto noteDto) {
-        return null;
+    public ResponseEntity<ApiResponse<NoteDto>> updateNote(
+            @PathVariable String noteId,
+            @Valid @RequestBody PatchNoteRequest patchNoteRequest
+    ) {
+        UUID userId = authUtils.authenticatedUserId();
+        NoteDto dto = notesService.updateNote(userId, noteId, patchNoteRequest);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Note Updated Successfully",
+                        dto
+                )
+        );
     }
 
     @DeleteMapping("/{noteId}")
