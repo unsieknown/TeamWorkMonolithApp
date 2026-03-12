@@ -1,13 +1,17 @@
 package com.mordiniaa.backend.controllers.open.authControllers;
 
 import com.mordiniaa.backend.exceptions.BadCredentialsException;
+import com.mordiniaa.backend.payload.ApiResponse;
 import com.mordiniaa.backend.request.auth.LoginRequest;
+import com.mordiniaa.backend.request.auth.ResetPasswordTokenRequest;
 import com.mordiniaa.backend.response.user.UserInfoResponse;
 import com.mordiniaa.backend.services.auth.AuthService;
+import com.mordiniaa.backend.services.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,7 +19,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,6 +28,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuthenticationManager authenticationManager;
+    private final UserService userService;
 
     @PostMapping("/signin")
     public ResponseEntity<Void> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
@@ -90,5 +94,37 @@ public class AuthController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @RequestBody String username
+    ) {
+
+        try {
+            userService.generatePasswordResetToken(username);
+        } catch (Exception e) {
+            // ignore
+        }
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "If the email address exists in our system, a password reset token will be sent to it shortly.",
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordTokenRequest request
+    ) {
+        userService.resetPassword(request);
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        "Password Changed Successfully",
+                        null
+                )
+        );
     }
 }
