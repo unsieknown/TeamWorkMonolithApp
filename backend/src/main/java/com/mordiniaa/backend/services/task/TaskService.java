@@ -2,6 +2,10 @@ package com.mordiniaa.backend.services.task;
 
 import com.mordiniaa.backend.dto.task.TaskDetailsDTO;
 import com.mordiniaa.backend.dto.task.TaskShortDto;
+import com.mordiniaa.backend.exceptions.AccessDeniedException;
+import com.mordiniaa.backend.exceptions.BoardNotFoundException;
+import com.mordiniaa.backend.exceptions.TaskNotFoundException;
+import com.mordiniaa.backend.exceptions.UsersNotAvailableException;
 import com.mordiniaa.backend.mappers.task.TaskMapper;
 import com.mordiniaa.backend.models.board.Board;
 import com.mordiniaa.backend.models.board.BoardMember;
@@ -21,6 +25,7 @@ import com.mordiniaa.backend.services.user.MongoUserService;
 import com.mordiniaa.backend.utils.BoardUtils;
 import com.mordiniaa.backend.utils.MongoIdUtils;
 import lombok.*;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -50,15 +55,15 @@ public class TaskService {
 
     protected Task findTaskById(ObjectId taskId) {
         return taskRepository.findById(taskId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(TaskNotFoundException::new);
     }
 
     public TaskDetailsDTO getTaskDetailsById(UUID userId, String bId, String tId) {
 
-        BiFunction<ObjectId, ObjectId, BoardMembersOnly> boardFunction = (boardId, taskId) -> {
-            return boardAggregationRepository.findBoardMembersForTask(boardId, userId, taskId)
-                    .orElseThrow(RuntimeException::new); //TODO: Change in Exceptions Section
-        };
+        BiFunction<ObjectId, ObjectId, BoardMembersOnly> boardFunction =
+                (boardId, taskId) -> boardAggregationRepository
+                        .findBoardMembersForTask(boardId, userId, taskId)
+                        .orElseThrow(BoardNotFoundException::new);
 
         BiFunction<BoardMembers, ObjectId, TaskShortDto> taskFunction = (board, taskId) -> {
 
@@ -66,14 +71,14 @@ public class TaskService {
             allMembers.add(board.getOwner());
 
             BoardMember currentMember = allMembers.stream().filter(mb -> mb.getUserId().equals(userId))
-                    .findFirst().orElseThrow(RuntimeException::new); //TODO: Change in Exceptions Section
+                    .findFirst().orElseThrow(() -> new UsersNotAvailableException("User Not Found"));
 
             if (!currentMember.canViewBoard()) {
-                throw new RuntimeException(); //TODO: Change in Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
             }
 
             Task task = taskRepository.findById(taskId)
-                    .orElseThrow(RuntimeException::new); //TODO: Change in Exceptions Section
+                    .orElseThrow(TaskNotFoundException::new);
 
             Set<UUID> userIds = allMembers.stream().map(BoardMember::getUserId)
                     .collect(Collectors.toSet());
@@ -86,20 +91,20 @@ public class TaskService {
     @Transactional
     public TaskShortDto createTask(UUID userId, String bId, String categoryName, CreateTaskRequest createTaskRequest) {
 
-        BiFunction<ObjectId, ObjectId, Board> boardFunction = (boardId, taskId) -> {
-            return boardRepository.getBoardByIdWithCategoryAndBoardMemberOrOwner(boardId, categoryName, userId)
-                    .orElseThrow(RuntimeException::new); //TODO: Change in Exceptions Section
-        };
+        BiFunction<ObjectId, ObjectId, Board> boardFunction =
+                (boardId, taskId) -> boardRepository
+                        .getBoardByIdWithCategoryAndBoardMemberOrOwner(boardId, categoryName, userId)
+                        .orElseThrow(BoardNotFoundException::new);
 
         BiFunction<Board, ObjectId, TaskShortDto> taskFunction = (board, taskId) -> {
             BoardMember currentMember = boardUtils.getBoardMember(board, userId);
             if (!board.getOwner().getUserId().equals(userId)
                     && createTaskRequest.getAssignedTo().contains(board.getOwner().getUserId())) {
-                throw new RuntimeException(); //TODO: Change in Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
             }
 
             if (!currentMember.canCreateTask())
-                throw new RuntimeException(); //TODO: Change in Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             Task task = new Task();
             if (createTaskRequest.getAssignedTo() != null) {
@@ -113,12 +118,12 @@ public class TaskService {
 
                 if (!assignedTo.isEmpty()) {
                     if (!currentMember.canAssignTask())
-                        throw new RuntimeException(); //TODO: Change in Exceptions Section
+                        throw new AccessDeniedException("You do not have permission to access this resource");
 
                     Set<UUID> membersIds = board.getMembers().stream().map(BoardMember::getUserId)
                             .collect(Collectors.toSet());
                     if (!membersIds.containsAll(assignedTo)) {
-                        throw new RuntimeException(); //TODO: Change in Exceptions Section
+                        throw new UsersNotAvailableException("One or more users are not part of board members");
                     }
                     task.addMembers(assignedTo);
                 }
@@ -160,8 +165,8 @@ public class TaskService {
 
         BiFunction<ObjectId, ObjectId, BoardMembersTasksOnly> boardFunction =
                 (boardId, taskId) -> boardAggregationRepository
-                .findBoardForTaskWithCategory(boardId, userId, taskId)
-                .orElseThrow(RuntimeException::new);
+                        .findBoardForTaskWithCategory(boardId, userId, taskId)
+                        .orElseThrow(BoardNotFoundException::new);
 
         BiFunction<BoardMembersTasksOnly, ObjectId, TaskShortDto> taskFunction = (board, taskId) -> {
             BoardMember currentMember = boardUtils.getBoardMember(board, userId);
@@ -171,7 +176,7 @@ public class TaskService {
                     .stream()
                     .filter(t -> t.getId().equals(taskId))
                     .findFirst()
-                    .orElseThrow(RuntimeException::new);
+                    .orElseThrow(() -> new ResourceNotFoundException("Resource Not Found"));
 
             if (task.getTaskPosition() == null) {
                 throw new IllegalStateException("Task position not resolved");
@@ -182,10 +187,10 @@ public class TaskService {
 
             if (!taskAuthor.equals(userId)) {
                 if (taskAuthor.equals(boardOwner))
-                    throw new RuntimeException(); // TODO: Change In Exceptions Section
+                    throw new AccessDeniedException("You do not have permission to access this resource");
 
                 if (!currentMember.canDeleteTask())
-                    throw new RuntimeException(); // TODO: Change In Exceptions Section
+                    throw new AccessDeniedException("You do not have permission to access this resource");
             }
 
             Query pullQuery = Query.query(Criteria
