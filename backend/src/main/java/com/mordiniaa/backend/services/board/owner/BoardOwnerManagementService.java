@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.services.board.owner;
 
 import com.mongodb.client.result.UpdateResult;
+import com.mordiniaa.backend.exceptions.BoardNotFoundException;
 import com.mordiniaa.backend.models.board.Board;
 import com.mordiniaa.backend.models.board.BoardMember;
 import com.mordiniaa.backend.repositories.mongo.board.BoardRepository;
@@ -10,6 +11,7 @@ import com.mordiniaa.backend.services.user.MongoUserService;
 import com.mordiniaa.backend.utils.BoardUtils;
 import com.mordiniaa.backend.utils.MongoIdUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -36,7 +38,7 @@ public class BoardOwnerManagementService {
 
         ObjectId boardId = mongoIdUtils.getObjectId(bId);
         Board board = boardAggregationRepository.findFullBoardByIdAndOwnerAndExistingMember(boardId, ownerId, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         BoardMember member = boardUtils.getBoardMember(board, userId);
 
@@ -71,6 +73,6 @@ public class BoardOwnerManagementService {
 
         UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, Board.class);
         if (result.getModifiedCount() == 0)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new ResourceNotFoundException("Resource Not Found");
     }
 }
