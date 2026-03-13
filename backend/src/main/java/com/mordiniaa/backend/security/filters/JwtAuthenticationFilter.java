@@ -1,6 +1,8 @@
 package com.mordiniaa.backend.security.filters;
 
 import com.mordiniaa.backend.config.JwtProperties;
+import com.mordiniaa.backend.exceptions.InvalidJwtException;
+import com.mordiniaa.backend.exceptions.SessionExpiredException;
 import com.mordiniaa.backend.security.objects.JwtPrincipal;
 import com.mordiniaa.backend.security.service.JwtService;
 import com.mordiniaa.backend.security.service.SessionRedisService;
@@ -75,7 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (!sessionService.validateSession(sessionId)) {
                         response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from(jwtTokenName).path("/").build().toString());
                         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenService.clearUserToken().toString());
-                        throw new RuntimeException(); // TODO: Change In Exceptions Section
+                        throw new SessionExpiredException("Session expired or invalid");
                     }
                 }
 
@@ -101,7 +103,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 context.setAuthentication(authenticationToken);
             } catch (JwtException e) {
-                throw new RuntimeException("Invalid JWT Token"); // TODO: Change In Exceptions Section
+                throw new InvalidJwtException("Invalid JWT token");
             }
         }
         filterChain.doFilter(request, response);
