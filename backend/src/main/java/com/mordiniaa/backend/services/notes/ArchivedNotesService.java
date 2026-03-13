@@ -2,11 +2,14 @@ package com.mordiniaa.backend.services.notes;
 
 import com.mongodb.client.result.UpdateResult;
 import com.mordiniaa.backend.dto.note.NoteDto;
+import com.mordiniaa.backend.exceptions.BadRequestException;
+import com.mordiniaa.backend.exceptions.NoteNotFoundException;
 import com.mordiniaa.backend.mappers.note.NoteMapper;
 import com.mordiniaa.backend.models.note.Note;
 import com.mordiniaa.backend.repositories.mongo.NotesRepository;
 import com.mordiniaa.backend.utils.PageResult;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -43,7 +46,7 @@ public class ArchivedNotesService {
     public void switchArchivedNoteForUser(UUID ownerId, String noteId) {
 
         if (!ObjectId.isValid(noteId)) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Invalid Note Id");
         }
 
         Query query = Query.query(
@@ -53,7 +56,7 @@ public class ArchivedNotesService {
 
         Note note = mongoTemplate.findOne(query, Note.class);
         if (note == null) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new NoteNotFoundException("Note Not Found");
         }
 
         Update update = new Update()
@@ -62,7 +65,7 @@ public class ArchivedNotesService {
         UpdateResult result = mongoTemplate.updateFirst(query, update, Note.class);
 
         if (result.getModifiedCount() != 1) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new ResourceNotFoundException("Resource not found");
         }
     }
 }
