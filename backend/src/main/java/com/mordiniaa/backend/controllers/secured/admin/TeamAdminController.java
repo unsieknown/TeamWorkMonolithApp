@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.controllers.secured.admin;
 
 import com.mordiniaa.backend.dto.team.TeamShortDto;
+import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
 import com.mordiniaa.backend.payload.ApiResponse;
 import com.mordiniaa.backend.request.team.TeamCreationRequest;
 import com.mordiniaa.backend.services.team.TeamAdminService;
@@ -69,7 +70,7 @@ public class TeamAdminController {
         switch (operation) {
             case "add" -> teamAdminService.addToTeam(userId, teamId);
             case "remove" -> teamAdminService.removeFromTeam(userId, teamId);
-            default -> throw new RuntimeException("Unsupported operation"); // TODO: Change In Exceptions Section
+            default -> throw new UnsupportedOperationException();
         }
         return ResponseEntity.ok().build();
     }
