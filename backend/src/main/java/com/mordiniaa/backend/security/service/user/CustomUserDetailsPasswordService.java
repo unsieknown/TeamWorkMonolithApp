@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.security.service.user;
 
+import com.mordiniaa.backend.exceptions.BadRequestException;
 import com.mordiniaa.backend.repositories.mysql.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,7 +26,7 @@ public class CustomUserDetailsPasswordService implements UserDetailsPasswordServ
         userRepository.updatePasswordByUserId(userId, newPassword);
 
         SecurityUserProjection updatedUser = userRepository.findSecurityUserByUsername(securityUser.getUsername())
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(() -> new BadRequestException("User Not Found"));
 
         return SecurityUser.build(updatedUser);
     }
