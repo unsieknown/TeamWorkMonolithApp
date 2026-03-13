@@ -1,5 +1,7 @@
 package com.mordiniaa.backend.services.storage;
 
+import com.mordiniaa.backend.exceptions.BadRequestException;
+import com.mordiniaa.backend.exceptions.UnexpectedException;
 import com.mordiniaa.backend.models.file.cloudStorage.FileNodeStorageKey;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -39,7 +41,7 @@ public class LocalStorageProvider implements StorageProvider {
         Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
 
         if (!readers.hasNext())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Invalid File Sent");
 
         ImageReader reader = readers.next();
         reader.setInput(iis, true, true);
@@ -48,13 +50,13 @@ public class LocalStorageProvider implements StorageProvider {
         int height = reader.getHeight(0);
 
         if (width > maxWidth || height > maxHeight) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Image To Large. Allowed Format %dx%d".formatted(maxWidth, maxHeight));
         }
 
         BufferedImage image = reader.read(0);
 
         if (image == null) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Invalid File Sent");
         }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -73,7 +75,7 @@ public class LocalStorageProvider implements StorageProvider {
         try {
             Files.deleteIfExists(target);
         } catch (IOException ex) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UnexpectedException("Unknown Error Occurred");
         }
     }
 
