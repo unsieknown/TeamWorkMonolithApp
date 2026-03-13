@@ -2,6 +2,9 @@ package com.mordiniaa.backend.services.board.owner;
 
 import com.mongodb.client.result.UpdateResult;
 import com.mordiniaa.backend.dto.board.BoardDetailsDto;
+import com.mordiniaa.backend.exceptions.BoardNotFoundException;
+import com.mordiniaa.backend.exceptions.TeamNotFoundException;
+import com.mordiniaa.backend.exceptions.UserNotInTeamException;
 import com.mordiniaa.backend.mappers.board.BoardMapper;
 import com.mordiniaa.backend.models.board.Board;
 import com.mordiniaa.backend.models.board.BoardMember;
@@ -15,6 +18,7 @@ import com.mordiniaa.backend.services.board.admin.BoardAdminService;
 import com.mordiniaa.backend.services.user.MongoUserService;
 import com.mordiniaa.backend.utils.MongoIdUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -44,7 +48,7 @@ public class BoardOwnerService {
         UUID teamId = boardCreationRequest.getTeamId();
 
         if (!teamRepository.existsTeamByTeamIdAndManager_UserId(teamId, userId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new TeamNotFoundException("Team Not Found");
 
         Board board = new Board();
         board.setTeamId(teamId);
@@ -57,7 +61,7 @@ public class BoardOwnerService {
         Board savedBoard = boardRepository.save(board);
         BoardFull aggregatedBoardDocument = boardAggregationRepositoryImpl
                 .findBoardWithTasksByUserIdAndBoardIdAndTeamId(userId, savedBoard.getId(), teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         return boardMapper.toDetailedDto(aggregatedBoardDocument);
     }
@@ -68,12 +72,11 @@ public class BoardOwnerService {
         ObjectId boardId = mongoIdUtils.getObjectId(bId);
 
         Board board = boardAggregationRepositoryImpl.findFullBoardByIdAndOwner(boardId, boardOwner)
-                .orElseThrow(RuntimeException::new);
-
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         UUID teamId = board.getTeamId();
         if (!teamRepository.existsUserInTeam(teamId, userId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UserNotInTeamException("User Not Found In Team");
 
         BoardMember newMember = new BoardMember(userId);
         newMember.setBoardPermissions(Set.of(BoardPermission.VIEW_BOARD));
@@ -82,7 +85,7 @@ public class BoardOwnerService {
         boardRepository.save(board);
         BoardFull savedBoard = boardAggregationRepositoryImpl
                 .findBoardWithTasksByUserIdAndBoardIdAndTeamId(boardOwner, boardId, teamId)
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(BoardNotFoundException::new);
         return boardMapper.toDetailedDto(savedBoard);
     }
 
@@ -92,12 +95,12 @@ public class BoardOwnerService {
         ObjectId boardId = mongoIdUtils.getObjectId(bId);
 
         Board board = boardAggregationRepositoryImpl.findFullBoardByIdAndOwner(boardId, boardOwner)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
         board.removeMember(userId);
         boardRepository.save(board);
         BoardFull savedBoard = boardAggregationRepositoryImpl
                 .findBoardWithTasksByUserIdAndBoardIdAndTeamId(boardOwner, boardId, board.getTeamId())
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(BoardNotFoundException::new);
         return boardMapper.toDetailedDto(savedBoard);
     }
 
@@ -118,6 +121,6 @@ public class BoardOwnerService {
 
         UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, Board.class);
         if (result.getModifiedCount() == 0)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new ResourceNotFoundException("Resource not found");
     }
 }
