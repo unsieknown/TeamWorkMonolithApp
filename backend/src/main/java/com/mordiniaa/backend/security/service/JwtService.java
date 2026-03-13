@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.security.service;
 
+import com.mordiniaa.backend.exceptions.InvalidJwtException;
 import com.mordiniaa.backend.security.token.JwtToken;
 import com.mordiniaa.backend.security.utils.JwtUtils;
 import io.jsonwebtoken.*;
@@ -67,7 +68,7 @@ public class JwtService {
         try {
             return UUID.fromString(stringId);
         } catch (Exception e) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new InvalidJwtException("JWT Token Is Invalid");
         }
     }
 
@@ -78,7 +79,7 @@ public class JwtService {
         try {
             return UUID.fromString(stringId);
         } catch (Exception e) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new InvalidJwtException("JWT Token Is Invalid");
         }
     }
 
