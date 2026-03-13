@@ -64,7 +64,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .anonymous(AbstractHttpConfigurer::disable)
+//                .anonymous(AbstractHttpConfigurer::disable)
                 .csrf(csrf ->
                         csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                                 .ignoringRequestMatchers("/sockjs/**")
@@ -78,6 +78,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(requests ->
                         requests
+                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                                 .requestMatchers("/api/csrf-token").permitAll()
                                 .requestMatchers(
                                         "/api/v1/auth/user",
