@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.utils;
 
+import com.mordiniaa.backend.exceptions.BadRequestException;
 import com.mordiniaa.backend.models.board.BoardMember;
 import com.mordiniaa.backend.models.board.BoardMembers;
 import org.springframework.stereotype.Component;
@@ -13,8 +14,11 @@ public class BoardUtils {
         if (board.getOwner().getUserId().equals(userId)) {
             return board.getOwner();
         } else {
-            return board.getMembers().stream().filter(bm -> bm.getUserId().equals(userId))
-                    .findFirst().orElseThrow(RuntimeException::new);
+            return board.getMembers()
+                    .stream()
+                    .filter(bm -> bm.getUserId().equals(userId))
+                    .findFirst()
+                    .orElseThrow(() -> new BadRequestException("Board Member Not Found"));
         }
     }
 }

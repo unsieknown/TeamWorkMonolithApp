@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.utils;
 
+import com.mordiniaa.backend.exceptions.UnexpectedException;
 import com.mordiniaa.backend.models.file.cloudStorage.FileNode;
 import com.mordiniaa.backend.models.file.cloudStorage.FileNodeBaseMeta;
 import com.mordiniaa.backend.models.file.cloudStorage.UserStorage;
@@ -8,6 +9,7 @@ import com.mordiniaa.backend.repositories.mysql.UserStorageRepository;
 import com.mordiniaa.backend.services.fileNode.FileNodeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +43,7 @@ public class CloudStorageServiceUtils {
             return userStorageRepository.save(new UserStorage(userId));
         } catch (DataIntegrityViolationException exception) {
             return userStorageRepository.findById(userId)
-                    .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                    .orElseThrow(() -> new UnexpectedException("Unknown Error Occurred"));
         }
     }
 
@@ -54,7 +56,7 @@ public class CloudStorageServiceUtils {
             parent = fileNodeService.getDirectory(parentId, userId);
             if (parent == null) {
                 log.error("Parent Node Not Found");
-                throw new RuntimeException("Parent Node Not Found"); // TODO: Change In Exceptions Section
+                throw new ResourceNotFoundException("Parent Path Element Not Found");
             }
         }
         return parent;
