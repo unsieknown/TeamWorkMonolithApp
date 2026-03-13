@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.services.storage.cloudStorage;
 
 import com.mordiniaa.backend.config.StorageProperties;
+import com.mordiniaa.backend.exceptions.FileNodeNotFound;
 import com.mordiniaa.backend.models.file.cloudStorage.*;
 import com.mordiniaa.backend.repositories.mysql.FileNodeRepository;
 import com.mordiniaa.backend.repositories.mysql.UserStorageRepository;
@@ -30,7 +31,7 @@ public class CloudStorageServiceDeleteResource {
 
         FileNode resource = fileNodeRepository
                 .findNodeByIdAndUserId(nodeId, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new FileNodeNotFound("Requested Resource Not Found"));
 
         UserStorage userStorage = resource.getUserStorage();
         long resourceSize = resource.getNodeType().equals(NodeType.DIRECTORY)
