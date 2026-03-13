@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.mappers.note;
 
 import com.mordiniaa.backend.dto.note.NoteDto;
+import com.mordiniaa.backend.exceptions.UnexpectedException;
 import com.mordiniaa.backend.mappers.note.dtoMappers.AbstractNoteDtoMapper;
 import com.mordiniaa.backend.mappers.note.modelMappers.AbstractNoteModelMapper;
 import com.mordiniaa.backend.models.note.Note;
@@ -49,7 +50,7 @@ public class NoteMapper {
         AbstractNoteDtoMapper<?, ?> mapper = mapperByModelType.get(note.getClass());
 
         if (mapper == null) {
-            throw new RuntimeException();
+            throw new UnexpectedException("Unknow Error Occurred");
         }
         return mapper.toDto(note);
     }
@@ -58,7 +59,7 @@ public class NoteMapper {
 
         AbstractNoteModelMapper<?, ?> mapper = mapperByNoteRequestType.get(noteRequest.getClass());
         if (mapper == null) {
-            throw new RuntimeException();
+            throw new UnexpectedException("Unknow Error Occurred");
         }
         return mapper.toModel(noteRequest);
     }
@@ -68,11 +69,11 @@ public class NoteMapper {
         AbstractNoteModelMapper<?, ?> mapper = updateByNoteType.get(note.getClass());
 
         if (mapper == null) {
-            throw new RuntimeException(); //TODO: Change in exceptions section
+            throw new UnexpectedException("Unknow Error Occurred");
         }
 
         if (!mapper.getSupportedRequestClasses().contains(patchNoteRequest.getClass())) {
-            throw new RuntimeException(); //TODO: Change in exceptions section
+            throw new UnexpectedException("Unknow Error Occurred");
         }
 
         mapper.updateNote(note, patchNoteRequest);
