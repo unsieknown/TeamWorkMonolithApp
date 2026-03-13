@@ -2,7 +2,7 @@ package com.mordiniaa.backend.controllers.global.task;
 
 import com.mordiniaa.backend.dto.task.TaskDetailsDTO;
 import com.mordiniaa.backend.dto.task.TaskShortDto;
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.request.task.CreateTaskRequest;
 import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.task.TaskService;
@@ -22,7 +22,7 @@ public class TaskController {
     private final TaskService taskService;
 
     @GetMapping("/{taskId}")
-    public ResponseEntity<ApiResponse<TaskDetailsDTO>> getTaskDetails(
+    public ResponseEntity<APIResponse<TaskDetailsDTO>> getTaskDetails(
             @RequestParam("b") String boardId,
             @PathVariable String taskId
     ) {
@@ -30,7 +30,7 @@ public class TaskController {
         TaskDetailsDTO dto = taskService.getTaskDetailsById(userId, boardId, taskId);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Successfully Created",
                         dto
                 )
@@ -38,7 +38,7 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TaskShortDto>> createTask(
+    public ResponseEntity<APIResponse<TaskShortDto>> createTask(
             @RequestParam("b") String boardId,
             @RequestParam("cn") String categoryName,
             @Valid @RequestBody CreateTaskRequest createTaskRequest
@@ -48,7 +48,7 @@ public class TaskController {
         TaskShortDto dto = taskService.createTask(userId, boardId, categoryName, createTaskRequest);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Successfully Created",
                         dto
                 )
@@ -56,7 +56,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<ApiResponse<Void>> deleteTaskById(
+    public ResponseEntity<APIResponse<Void>> deleteTaskById(
             @RequestParam("b") String boardId,
             @PathVariable String taskId
     ) {
@@ -64,7 +64,7 @@ public class TaskController {
         taskService.deleteTaskFromBoard(userId, boardId, taskId);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Successfully Created",
                         null
                 )

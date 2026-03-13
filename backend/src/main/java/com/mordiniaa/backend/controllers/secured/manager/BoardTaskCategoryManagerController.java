@@ -1,10 +1,9 @@
 package com.mordiniaa.backend.controllers.secured.manager;
 
 import com.mordiniaa.backend.dto.board.BoardDetailsDto;
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.request.board.TaskCategoryRequest;
 import com.mordiniaa.backend.security.utils.AuthUtils;
-import com.mordiniaa.backend.services.board.owner.BoardOwnerManagementService;
 import com.mordiniaa.backend.services.board.owner.BoardOwnerTaskCategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,7 +22,7 @@ public class BoardTaskCategoryManagerController {
     private final AuthUtils authUtils;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<BoardDetailsDto>> createTaskCategory(
+    public ResponseEntity<APIResponse<BoardDetailsDto>> createTaskCategory(
             @PathVariable String boardId,
             @RequestBody TaskCategoryRequest taskCategoryRequest
     ) {
@@ -32,7 +31,7 @@ public class BoardTaskCategoryManagerController {
         BoardDetailsDto dto = boardOwnerTaskCategoryService.createTaskCategory(managerId, boardId, taskCategoryRequest);
 
         return new ResponseEntity<>(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Created Successfully",
                         dto
                 ),
@@ -41,7 +40,7 @@ public class BoardTaskCategoryManagerController {
     }
 
     @PutMapping("/rename")
-    public ResponseEntity<ApiResponse<BoardDetailsDto>> renameTaskCategory(
+    public ResponseEntity<APIResponse<BoardDetailsDto>> renameTaskCategory(
         @PathVariable String boardId,
         @RequestParam(name = "t") UUID teamId,
         @RequestBody TaskCategoryRequest taskCategoryRequest
@@ -50,7 +49,7 @@ public class BoardTaskCategoryManagerController {
         UUID managerId = authUtils.authenticatedUserId();
         BoardDetailsDto dto = boardOwnerTaskCategoryService.renameTaskCategory(managerId, boardId, teamId, taskCategoryRequest);
         return new ResponseEntity<>(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Created Successfully",
                         dto
                 ),
@@ -59,7 +58,7 @@ public class BoardTaskCategoryManagerController {
     }
 
     @PutMapping("/reorder")
-    public ResponseEntity<ApiResponse<BoardDetailsDto>> reorderTaskCategories(
+    public ResponseEntity<APIResponse<BoardDetailsDto>> reorderTaskCategories(
             @PathVariable String boardId,
             @RequestParam(name = "t") UUID teamId,
             @RequestParam(name = "p") Integer newPosition,
@@ -68,7 +67,7 @@ public class BoardTaskCategoryManagerController {
         UUID managerId = authUtils.authenticatedUserId();
         BoardDetailsDto dto = boardOwnerTaskCategoryService.reorderTaskCategories(managerId, boardId, teamId, taskCategoryRequest, newPosition);
         return new ResponseEntity<>(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Created Successfully",
                         dto
                 ),

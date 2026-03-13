@@ -2,7 +2,7 @@ package com.mordiniaa.backend.controllers.global.task;
 
 import com.mordiniaa.backend.dto.task.TaskDetailsDTO;
 import com.mordiniaa.backend.dto.task.TaskShortDto;
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.request.task.UpdateTaskPositionRequest;
 import com.mordiniaa.backend.request.task.UploadCommentRequest;
 import com.mordiniaa.backend.security.utils.AuthUtils;
@@ -23,7 +23,7 @@ public class TaskActivityController {
     private final TaskActivityService taskActivityService;
 
     @PutMapping("/position")
-    public ResponseEntity<ApiResponse<TaskShortDto>> changeTaskPosition(
+    public ResponseEntity<APIResponse<TaskShortDto>> changeTaskPosition(
             @PathVariable String taskId,
             @RequestParam("b") String boardId,
             @Valid @RequestBody UpdateTaskPositionRequest updateTaskPositionRequest
@@ -33,7 +33,7 @@ public class TaskActivityController {
 
         TaskShortDto dto = taskActivityService.changeTaskPosition(userId, boardId, taskId, updateTaskPositionRequest);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Updated Successfully",
                         dto
                 )
@@ -41,7 +41,7 @@ public class TaskActivityController {
     }
 
     @PostMapping("/comment")
-    public ResponseEntity<ApiResponse<TaskDetailsDTO>> writeComment(
+    public ResponseEntity<APIResponse<TaskDetailsDTO>> writeComment(
             @PathVariable String taskId,
             @RequestParam("b") String boardId,
             @Valid @RequestBody UploadCommentRequest updateTaskPositionRequest
@@ -51,7 +51,7 @@ public class TaskActivityController {
 
         TaskDetailsDTO dto = taskActivityService.writeComment(userId, boardId, taskId, updateTaskPositionRequest);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Commented Successfully",
                         dto
                 )
@@ -59,7 +59,7 @@ public class TaskActivityController {
     }
 
     @PutMapping("/comment")
-    public ResponseEntity<ApiResponse<TaskDetailsDTO>> updateComment(
+    public ResponseEntity<APIResponse<TaskDetailsDTO>> updateComment(
             @PathVariable String taskId,
             @RequestParam("b") String boardId,
             @Valid @RequestBody UploadCommentRequest updateTaskPositionRequest
@@ -69,7 +69,7 @@ public class TaskActivityController {
 
         TaskDetailsDTO dto = taskActivityService.updateComment(userId, boardId, taskId, updateTaskPositionRequest);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Updated Successfully",
                         dto
                 )
@@ -77,7 +77,7 @@ public class TaskActivityController {
     }
 
     @DeleteMapping("/comment/{commentId}")
-    public ResponseEntity<ApiResponse<TaskDetailsDTO>> deleteComment(
+    public ResponseEntity<APIResponse<TaskDetailsDTO>> deleteComment(
             @PathVariable String taskId,
             @PathVariable UUID commentId,
             @RequestParam("b") String boardId
@@ -87,7 +87,7 @@ public class TaskActivityController {
 
         TaskDetailsDTO dto = taskActivityService.deleteComment(userId, boardId, taskId, commentId);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Deleted Successfully",
                         dto
                 )

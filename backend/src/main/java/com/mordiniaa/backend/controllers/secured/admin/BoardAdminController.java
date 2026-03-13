@@ -1,6 +1,6 @@
 package com.mordiniaa.backend.controllers.secured.admin;
 
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.services.board.admin.BoardAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ public class BoardAdminController {
     private final BoardAdminService boardAdminService;
 
     @PutMapping
-    public ResponseEntity<ApiResponse<Void>> setBoardOwner(
+    public ResponseEntity<APIResponse<Void>> setBoardOwner(
             @RequestParam(name = "u") UUID userId,
             @RequestParam(name = "t") UUID teamId,
             @PathVariable String boardId
@@ -24,7 +24,7 @@ public class BoardAdminController {
 
         boardAdminService.setBoardOwner(boardId, userId, teamId);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Updated Successfully",
                         null
                 )

@@ -1,7 +1,7 @@
 package com.mordiniaa.backend.controllers.global.task;
 
 import com.mordiniaa.backend.dto.task.TaskDetailsDTO;
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.request.task.AssignUsersRequest;
 import com.mordiniaa.backend.request.task.PatchTaskDataRequest;
 import com.mordiniaa.backend.security.utils.AuthUtils;
@@ -22,7 +22,7 @@ public class TaskManagementController {
     private final TaskManagementService taskManagementService;
 
     @PatchMapping
-    public ResponseEntity<ApiResponse<TaskDetailsDTO>> updateTask(
+    public ResponseEntity<APIResponse<TaskDetailsDTO>> updateTask(
             @PathVariable String taskId,
             @RequestParam("b") String boardId,
             @RequestBody PatchTaskDataRequest patchTaskDataRequest
@@ -32,7 +32,7 @@ public class TaskManagementController {
         TaskDetailsDTO dto = taskManagementService.updateTask(userId, boardId, taskId, patchTaskDataRequest);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Updated Successfully",
                         dto
                 )
@@ -40,7 +40,7 @@ public class TaskManagementController {
     }
 
     @PutMapping("/user/add")
-    public ResponseEntity<ApiResponse<TaskDetailsDTO>> assignUsersToTask(
+    public ResponseEntity<APIResponse<TaskDetailsDTO>> assignUsersToTask(
             @PathVariable String taskId,
             @RequestParam("b") String boardId,
             @Valid @RequestBody AssignUsersRequest assignUsersRequest
@@ -49,7 +49,7 @@ public class TaskManagementController {
         UUID userId = authUtils.authenticatedUserId();
         TaskDetailsDTO dto = taskManagementService.assignUsersToTask(userId, assignUsersRequest, boardId, taskId);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Successfully Assigned",
                         dto
                 )

@@ -1,7 +1,7 @@
 package com.mordiniaa.backend.controllers.global.cloudStorageController;
 
 import com.mordiniaa.backend.dto.file.FileNodeDto;
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.payload.CollectionResponse;
 import com.mordiniaa.backend.payload.PageMeta;
 import com.mordiniaa.backend.security.utils.AuthUtils;
@@ -31,7 +31,7 @@ public class CloudStorageController {
     private final CloudStorageServiceDeleteResource cloudStorageServiceDeleteResource;
 
     @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<Void>> upload(
+    public ResponseEntity<APIResponse<Void>> upload(
             @RequestBody MultipartFile file,
             @RequestParam(value = "parentId", required = false) UUID parentId
     ) {
@@ -40,7 +40,7 @@ public class CloudStorageController {
         cloudStorageServiceCreateResource.uploadFile(userId, parentId, file);
 
         return new ResponseEntity<>(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Uploaded Successfully",
                         null
                 ),
@@ -49,7 +49,7 @@ public class CloudStorageController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<Void>> createDir(
+    public ResponseEntity<APIResponse<Void>> createDir(
             @RequestParam(value = "parentId", required = false) UUID parentId,
             @RequestParam("dirName") String dirName
     ) {
@@ -58,7 +58,7 @@ public class CloudStorageController {
         cloudStorageServiceCreateResource.createDir(userId, parentId, dirName);
 
         return new ResponseEntity<>(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Directory Created",
                         null
                 ),
@@ -105,7 +105,7 @@ public class CloudStorageController {
     }
 
     @PutMapping("/move")
-    public ResponseEntity<ApiResponse<Void>> moveResource(
+    public ResponseEntity<APIResponse<Void>> moveResource(
             @RequestParam(value = "from", required = false) UUID from,
             @RequestParam(value = "to", required = false) UUID to,
             @RequestParam("direction") String direction
@@ -119,7 +119,7 @@ public class CloudStorageController {
         else throw new RuntimeException("Unsupported Operation");
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Resource Moved Successfully",
                         null
                 )

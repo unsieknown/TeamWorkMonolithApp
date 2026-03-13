@@ -2,7 +2,7 @@ package com.mordiniaa.backend.controllers.secured.admin;
 
 import com.mordiniaa.backend.dto.team.TeamShortDto;
 import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.request.team.TeamCreationRequest;
 import com.mordiniaa.backend.services.team.TeamAdminService;
 import jakarta.validation.Valid;
@@ -21,10 +21,10 @@ public class TeamAdminController {
     private final TeamAdminService teamAdminService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TeamShortDto>> createTeam(@Valid @RequestBody TeamCreationRequest teamCreationRequest) {
+    public ResponseEntity<APIResponse<TeamShortDto>> createTeam(@Valid @RequestBody TeamCreationRequest teamCreationRequest) {
 
         TeamShortDto dto = teamAdminService.createTeam(teamCreationRequest);
-        ApiResponse<TeamShortDto> response = new ApiResponse<>(
+        APIResponse<TeamShortDto> response = new APIResponse<>(
                 "Success",
                 dto
         );
@@ -32,12 +32,12 @@ public class TeamAdminController {
     }
 
     @PutMapping("/{teamId}/manager/{managerId}")
-    public ResponseEntity<ApiResponse<TeamShortDto>> assignManagerToTeam(
+    public ResponseEntity<APIResponse<TeamShortDto>> assignManagerToTeam(
             @PathVariable UUID managerId,
             @PathVariable UUID teamId
     ) {
         TeamShortDto dto = teamAdminService.assignManagerToTeam(managerId, teamId);
-        ApiResponse<TeamShortDto> response = new ApiResponse<>(
+        APIResponse<TeamShortDto> response = new APIResponse<>(
                 "Assigned",
                 dto
         );

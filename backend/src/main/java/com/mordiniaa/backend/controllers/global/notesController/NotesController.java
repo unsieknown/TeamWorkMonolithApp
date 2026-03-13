@@ -2,7 +2,7 @@ package com.mordiniaa.backend.controllers.global.notesController;
 
 import com.mordiniaa.backend.config.NotesConstants;
 import com.mordiniaa.backend.dto.note.NoteDto;
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.payload.CollectionResponse;
 import com.mordiniaa.backend.request.note.CreateNoteRequest;
 import com.mordiniaa.backend.request.note.PatchNoteRequest;
@@ -32,14 +32,14 @@ public class NotesController {
     private final AuthUtils authUtils;
 
     @GetMapping("/{noteId}")
-    public ResponseEntity<ApiResponse<NoteDto>> getNoteById(@PathVariable String noteId) {
+    public ResponseEntity<APIResponse<NoteDto>> getNoteById(@PathVariable String noteId) {
 
         UUID userId = authUtils.authenticatedUserId();
         return notesService.getNoteById(
                         noteId,
                         userId
                 )
-                .map(dto -> ResponseEntity.ok(new ApiResponse<>("Success", dto)))
+                .map(dto -> ResponseEntity.ok(new APIResponse<>("Success", dto)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -59,7 +59,7 @@ public class NotesController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<NoteDto>> createNote(
+    public ResponseEntity<APIResponse<NoteDto>> createNote(
             @Valid
             @RequestBody
             CreateNoteRequest createNoteRequest
@@ -68,7 +68,7 @@ public class NotesController {
         UUID userId = authUtils.authenticatedUserId();
         NoteDto dto = notesService.createNote(userId, createNoteRequest);
         return new ResponseEntity<>(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Note Created Successfully",
                         dto
                 ),
@@ -77,14 +77,14 @@ public class NotesController {
     }
 
     @PutMapping("/{noteId}")
-    public ResponseEntity<ApiResponse<NoteDto>> updateNote(
+    public ResponseEntity<APIResponse<NoteDto>> updateNote(
             @PathVariable String noteId,
             @Valid @RequestBody PatchNoteRequest patchNoteRequest
     ) {
         UUID userId = authUtils.authenticatedUserId();
         NoteDto dto = notesService.updateNote(userId, noteId, patchNoteRequest);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Note Updated Successfully",
                         dto
                 )

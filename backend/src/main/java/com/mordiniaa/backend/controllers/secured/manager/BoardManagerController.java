@@ -1,7 +1,7 @@
 package com.mordiniaa.backend.controllers.secured.manager;
 
 import com.mordiniaa.backend.dto.board.BoardDetailsDto;
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.request.board.BoardCreationRequest;
 import com.mordiniaa.backend.request.board.PermissionsRequest;
 import com.mordiniaa.backend.security.utils.AuthUtils;
@@ -24,12 +24,12 @@ public class BoardManagerController {
     private final BoardOwnerManagementService boardOwnerManagementService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<BoardDetailsDto>> createBoard(@Valid @RequestBody BoardCreationRequest boardCreationRequest) {
+    public ResponseEntity<APIResponse<BoardDetailsDto>> createBoard(@Valid @RequestBody BoardCreationRequest boardCreationRequest) {
         UUID managerId = authUtils.authenticatedUserId();
         BoardDetailsDto dto = boardOwnerService.createBoard(managerId, boardCreationRequest);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Created Successfully",
                         dto
                 )
@@ -37,7 +37,7 @@ public class BoardManagerController {
     }
 
     @PutMapping("/{boardId}")
-    public ResponseEntity<ApiResponse<Void>> changeBoardMemberPermissions(
+    public ResponseEntity<APIResponse<Void>> changeBoardMemberPermissions(
             @PathVariable String boardId,
             @RequestParam("u") UUID userId,
             @Valid @RequestBody PermissionsRequest permissionsRequest
@@ -46,7 +46,7 @@ public class BoardManagerController {
         boardOwnerManagementService.changeBoardMemberPermissions(managerId, boardId, userId, permissionsRequest);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Updated",
                         null
                 )
@@ -54,14 +54,14 @@ public class BoardManagerController {
     }
 
     @PutMapping("/{boardId}/archive")
-    public ResponseEntity<ApiResponse<Void>> archiveBoard(
+    public ResponseEntity<APIResponse<Void>> archiveBoard(
             @PathVariable String boardId
     ) {
 
         UUID managerId = authUtils.authenticatedUserId();
         boardOwnerManagementService.archiveBoard(managerId, boardId);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Archived Successfully",
                         null
                 )
@@ -69,14 +69,14 @@ public class BoardManagerController {
     }
 
     @PutMapping("/{boardId}/restore")
-    public ResponseEntity<ApiResponse<Void>> restoreBoard(
+    public ResponseEntity<APIResponse<Void>> restoreBoard(
             @PathVariable String boardId
     ) {
 
         UUID managerId = authUtils.authenticatedUserId();
         boardOwnerManagementService.restoreBoard(managerId, boardId);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Restored Successfully",
                         null
                 )
@@ -101,13 +101,13 @@ public class BoardManagerController {
     }
 
     @DeleteMapping("/{boardId}")
-    public ResponseEntity<ApiResponse<Void>> deleteBoard(@PathVariable String boardId) {
+    public ResponseEntity<APIResponse<Void>> deleteBoard(@PathVariable String boardId) {
 
         UUID managerId = authUtils.authenticatedUserId();
         boardOwnerService.deleteBoard(managerId, boardId);
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Successfully Deleted",
                         null
                 )

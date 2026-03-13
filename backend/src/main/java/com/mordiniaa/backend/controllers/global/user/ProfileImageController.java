@@ -1,6 +1,6 @@
 package com.mordiniaa.backend.controllers.global.user;
 
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +20,12 @@ public class ProfileImageController {
     private final UserService userService;
 
     @PostMapping("/add")
-    public ResponseEntity<ApiResponse<Void>> addProgileImage(@RequestBody MultipartFile profileImage) {
+    public ResponseEntity<APIResponse<Void>> addProgileImage(@RequestBody MultipartFile profileImage) {
 
         UUID userId = authUtils.authenticatedUserId();
         userService.addProfileImage(userId, profileImage);
         return new ResponseEntity<>(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Added Image Successfully",
                         null
                 ),
@@ -34,12 +34,12 @@ public class ProfileImageController {
     }
 
     @PutMapping("/default")
-    public ResponseEntity<ApiResponse<Void>> setDefaultImage() {
+    public ResponseEntity<APIResponse<Void>> setDefaultImage() {
 
         UUID userId = authUtils.authenticatedUserId();
         userService.setDefaultProfileImage(userId);
         return new ResponseEntity<>(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Image Set Successfully",
                         null
                 ),

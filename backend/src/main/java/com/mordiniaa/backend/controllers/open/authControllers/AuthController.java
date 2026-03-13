@@ -1,6 +1,6 @@
 package com.mordiniaa.backend.controllers.open.authControllers;
 
-import com.mordiniaa.backend.payload.ApiResponse;
+import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.request.auth.LoginRequest;
 import com.mordiniaa.backend.request.auth.ResetPasswordTokenRequest;
 import com.mordiniaa.backend.response.user.UserInfoResponse;
@@ -96,7 +96,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+    public ResponseEntity<APIResponse<Void>> forgotPassword(
             @RequestBody String username
     ) {
 
@@ -107,7 +107,7 @@ public class AuthController {
         }
 
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "If the email address exists in our system, a password reset token will be sent to it shortly.",
                         null
                 )
@@ -115,12 +115,12 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse<Void>> resetPassword(
+    public ResponseEntity<APIResponse<Void>> resetPassword(
             @Valid @RequestBody ResetPasswordTokenRequest request
     ) {
         userService.resetPassword(request);
         return ResponseEntity.ok(
-                new ApiResponse<>(
+                new APIResponse<>(
                         "Password Changed Successfully",
                         null
                 )
