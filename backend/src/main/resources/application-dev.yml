@@ -1,4 +1,9 @@
 spring:
+  web:
+    resources:
+      add-mappings: false
+  thymeleaf:
+    check-template-location: false
   application:
     name: backend
   output:
@@ -82,7 +87,7 @@ logging:
   level:
     org:
       springframework:
-        security: info
+        security: trace
         boot:
           autoconfigure:
             data:
