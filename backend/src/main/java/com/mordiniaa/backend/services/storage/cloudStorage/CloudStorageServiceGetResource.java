@@ -3,6 +3,7 @@ package com.mordiniaa.backend.services.storage.cloudStorage;
 import com.mordiniaa.backend.config.StorageProperties;
 import com.mordiniaa.backend.dto.file.FileNodeDto;
 import com.mordiniaa.backend.exceptions.FileNodeNotFound;
+import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
 import com.mordiniaa.backend.mappers.file.FIleNodeMapper;
 import com.mordiniaa.backend.models.file.cloudStorage.*;
 import com.mordiniaa.backend.repositories.mysql.FileNodeRepository;
@@ -86,7 +87,7 @@ public class CloudStorageServiceGetResource {
                 .orElseThrow(() -> new FileNodeNotFound("Requested Resource Not Found"));
 
         if (node.getNodeType().equals(NodeType.ROOT))
-            throw new RuntimeException();
+            throw new UnsupportedOperationException("Cannot Download This Dir");
 
         StreamingResponseBody streamingResponseBody;
         if (node.getNodeType().equals(NodeType.FILE))
