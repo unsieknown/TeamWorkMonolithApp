@@ -82,7 +82,7 @@ logging:
   level:
     org:
       springframework:
-        security: trace
+        security: info
         boot:
           autoconfigure:
             data:
