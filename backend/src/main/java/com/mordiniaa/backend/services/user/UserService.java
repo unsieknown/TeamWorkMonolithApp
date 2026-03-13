@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.services.user;
 
+import com.mordiniaa.backend.exceptions.BadRequestException;
 import com.mordiniaa.backend.models.auth.PasswordResetToken;
 import com.mordiniaa.backend.models.user.DbUser;
 import com.mordiniaa.backend.models.user.mysql.AppRole;
@@ -35,14 +36,14 @@ public class UserService {
 
     public User getUser(UUID userId) {
         return userRepository.findById(userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BadRequestException("User Not Found"));
     }
 
     public void addProfileImage(UUID userId, MultipartFile file) {
 
         mongoUserService.checkUserAvailability(userId);
         DbUser user = userRepresentationRepository.findByUserId(userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BadRequestException("User Not Found"));
 
         imagesStorageService.addProfileImage(user, file);
     }
@@ -51,7 +52,7 @@ public class UserService {
 
         mongoUserService.checkUserAvailability(userId);
         DbUser user = userRepresentationRepository.findByUserId(userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BadRequestException("User Not Found"));
 
         imagesStorageService.setDefaultImage(user);
     }
@@ -60,7 +61,7 @@ public class UserService {
     public void generatePasswordResetToken(String username) {
 
         User user = userRepository.findUserByUsernameAndDeletedFalse(username)
-                .orElseThrow(() -> new RuntimeException("User Not Found")); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BadRequestException("User Not Found"));
 
         Contact userContactData = user.getContact();
 
@@ -92,14 +93,14 @@ public class UserService {
         }
 
         PasswordResetToken resetToken = passwordResetTokenRepository.findPasswordResetTokenByToken(storedToken)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BadRequestException("Invalid Refresh Token"));
 
         if (resetToken.isUsed()) {
-            throw new RuntimeException("Password reset token has already been used");
+            throw new BadRequestException("Token Already Used");
         }
 
         if (resetToken.getExpiryDate().isBefore(Instant.now())) {
-            throw new RuntimeException("Password reset token expired");
+            throw new BadRequestException("Token Expired");
         }
 
         User user = resetToken.getUser();
@@ -112,6 +113,6 @@ public class UserService {
 
     public User findNonDeletedUserAndAppRole(UUID userId, AppRole appRole) {
         return userRepository.findUserByUserIdAndDeletedFalseAndRole_AppRole(userId, appRole)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BadRequestException("User Not Found"));
     }
 }
