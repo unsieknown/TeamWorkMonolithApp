@@ -9,13 +9,13 @@ import java.time.Instant;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ApiExceptionResponse {
+public class APIExceptionResponse {
 
     private int status;
     private String message;
     private Instant timestamp = Instant.now();
 
-    public ApiExceptionResponse(int status, String message) {
+    public APIExceptionResponse(int status, String message) {
         this.status = status;
         this.message = message;
     }
