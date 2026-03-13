@@ -1,6 +1,8 @@
 package com.mordiniaa.backend.security.service.token;
 
 import com.mordiniaa.backend.events.authentication.events.SessionMisuseEvent;
+import com.mordiniaa.backend.exceptions.RefreshTokenException;
+import com.mordiniaa.backend.exceptions.SessionIntegrityException;
 import com.mordiniaa.backend.models.Session;
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.security.model.RefreshTokenEntity;
@@ -76,7 +78,7 @@ public class TokenService {
     public TokenSet refreshToken(String rawToken, HttpServletRequest request) {
 
         int dotIdx = rawToken.indexOf(".");
-        if (dotIdx < 1) throw new RuntimeException(); // TODO: Change in exceptions Section
+        if (dotIdx < 1) throw new RefreshTokenException("Invalid Refresh Token");
 
         String idPart = rawToken.substring(0, dotIdx);
         String tokenPart = rawToken.substring(dotIdx + 1);
@@ -105,7 +107,7 @@ public class TokenService {
             storedEntity = refreshTokenService.rotate(user.getUserId(), entity, tokenPart, newRawToken, roles);
         } catch (Exception e) {
             sessionRedisService.deleteSession(session.getSessionId());
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Invalid Refresh Token");
         }
 
         RefreshToken refreshToken = refreshTokenService.generateRefreshToken(storedEntity, newRawToken);
@@ -130,7 +132,7 @@ public class TokenService {
     public TokenSet refreshToken(UUID userId, UUID sessionId, String oldRefreshToken, HttpServletRequest request) {
 
         int dotIdx = oldRefreshToken.indexOf(".");
-        if (dotIdx < 1) throw new RuntimeException(); // TODO: Change in exceptions Section
+        if (dotIdx < 1) throw new RefreshTokenException("Invalid Refresh Token");
 
         String idPart = oldRefreshToken.substring(0, dotIdx);
         String tokenPart = oldRefreshToken.substring(dotIdx + 1);
@@ -143,7 +145,7 @@ public class TokenService {
         }
 
         if (tokenId != storedTokenId)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Invalid Refresh Token");
 
         User user = userService.getUser(userId);
         List<String> roles = List.of(user.getRole().getAppRole().toString());
@@ -154,7 +156,7 @@ public class TokenService {
             storedEntity = refreshTokenService.rotate(userId, tokenId, tokenPart, newRawToken, roles, request);
         } catch (Exception e) {
             sessionRedisService.deleteSession(sessionId);
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Invalid Refresh Token");
         }
 
         RefreshToken refreshToken = refreshTokenService.generateRefreshToken(storedEntity, newRawToken);
@@ -178,7 +180,7 @@ public class TokenService {
     public TokenSet deactivateCookies(UUID userId, UUID sessionId, String refreshToken) {
 
         int dotIdx = refreshToken.indexOf(".");
-        if (dotIdx < 1) throw new RuntimeException(); // TODO: Change in exceptions Section
+        if (dotIdx < 1) throw new RefreshTokenException("Invalid Refresh Token");
 
         String idPart = refreshToken.substring(0, dotIdx);
         String tokenPart = refreshToken.substring(dotIdx + 1);
@@ -191,7 +193,7 @@ public class TokenService {
         }
 
         if (tokenId != storedTokenId)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Invalid Refresh Token");
 
         JwtToken emptyJwtToken = jwtService.getEmptyToken();
         RefreshToken emptyRefreshToken = refreshTokenService.deactivateRefreshToken(userId, sessionId, tokenId, tokenPart);
@@ -205,7 +207,7 @@ public class TokenService {
         try {
             return Long.parseLong(tokenId);
         } catch (NumberFormatException e) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Invalid Refresh Token");
         }
     }
 }
