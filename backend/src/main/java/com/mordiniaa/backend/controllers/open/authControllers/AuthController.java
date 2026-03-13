@@ -1,6 +1,5 @@
 package com.mordiniaa.backend.controllers.open.authControllers;
 
-import com.mordiniaa.backend.exceptions.BadCredentialsException;
 import com.mordiniaa.backend.payload.ApiResponse;
 import com.mordiniaa.backend.request.auth.LoginRequest;
 import com.mordiniaa.backend.request.auth.ResetPasswordTokenRequest;
@@ -10,10 +9,10 @@ import com.mordiniaa.backend.services.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,7 +41,7 @@ public class AuthController {
                     )
             );
         } catch (Exception e) {
-            throw new BadCredentialsException();
+            throw new BadCredentialsException("Invalid Credentials");
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
