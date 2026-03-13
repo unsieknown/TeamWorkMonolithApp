@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.mappers.task.activityMappers;
 
 import com.mordiniaa.backend.dto.task.activity.TaskActivityElementDto;
+import com.mordiniaa.backend.exceptions.UnexpectedException;
 import com.mordiniaa.backend.mappers.task.activityMappers.dtoMappers.AbstractActivityDtoMapper;
 import com.mordiniaa.backend.models.task.activity.TaskActivityElement;
 import com.mordiniaa.backend.models.user.mongodb.UserRepresentation;
@@ -28,7 +29,7 @@ public class TaskActivityMapper {
 
         AbstractActivityDtoMapper<?, ?> mapper = taskActivityDtoMappers.get(element.getClass());
         if (mapper == null) {
-            throw new RuntimeException(); //TODO: Change in Exceptions Section
+            throw new UnexpectedException("Unknow Error Occurred");
         }
         return mapper.toDto(element, user);
     }
