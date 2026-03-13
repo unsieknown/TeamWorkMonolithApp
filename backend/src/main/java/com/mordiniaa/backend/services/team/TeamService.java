@@ -3,6 +3,7 @@ package com.mordiniaa.backend.services.team;
 import com.mordiniaa.backend.dto.team.TeamDetailedDto;
 import com.mordiniaa.backend.dto.team.TeamShortDto;
 import com.mordiniaa.backend.dto.user.UserDto;
+import com.mordiniaa.backend.exceptions.TeamNotFoundException;
 import com.mordiniaa.backend.mappers.team.TeamMapper;
 import com.mordiniaa.backend.mappers.user.UserMapper;
 import com.mordiniaa.backend.models.team.Team;
@@ -26,7 +27,7 @@ public class TeamService {
 
     Team getTeam(UUID teamId) {
         return teamRepository.findById(teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(TeamNotFoundException::new);
     }
 
     public List<TeamShortDto> getTeamsForManager(UUID managerId) {
@@ -39,7 +40,7 @@ public class TeamService {
     public TeamDetailedDto getTeamDetails(UUID teamId, UUID managerId) {
 
         Team team = teamRepository.findTeamByTeamIdAndManager_UserId(teamId, managerId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(TeamNotFoundException::new);
 
         Set<UserDto> dtoMembers = team.getTeamMembers().stream().map(userMapper::toDto)
                 .collect(Collectors.toSet());

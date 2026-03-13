@@ -1,6 +1,10 @@
 package com.mordiniaa.backend.services.team;
 
 import com.mordiniaa.backend.dto.team.TeamShortDto;
+import com.mordiniaa.backend.exceptions.BadRequestException;
+import com.mordiniaa.backend.exceptions.TeamNotFoundException;
+import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
+import com.mordiniaa.backend.exceptions.UsersNotAvailableException;
 import com.mordiniaa.backend.mappers.team.TeamMapper;
 import com.mordiniaa.backend.models.team.Team;
 import com.mordiniaa.backend.models.user.mysql.AppRole;
@@ -31,7 +35,7 @@ public class TeamAdminService {
         String teamName = teamCreationRequest.getTeamName().trim();
         String lowerTeamName = teamName.toLowerCase();
         if (teamRepository.existsByTeamNameIgnoreCase(lowerTeamName))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new TeamNotFoundException();
 
         Team team = new Team(lowerTeamName);
         team.setPresentationName(teamName);
@@ -45,15 +49,15 @@ public class TeamAdminService {
         User user = userService.findNonDeletedUserAndAppRole(userId, AppRole.ROLE_MANAGER);
 
         Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(TeamNotFoundException::new);
 
         if (team.getManager() != null) {
             User manager = team.getManager();
             if (manager.getUserId().equals(userId))
                 // This manager Already Assigned
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new BadRequestException("Manager Already Assigned");
             // Other Manager Already Assigned
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Other Manager Is Already Assigned");
         }
 
         team.setManager(user);
@@ -65,7 +69,7 @@ public class TeamAdminService {
 
         Team team = teamService.getTeam(teamId);
         if (team.getManager() == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UsersNotAvailableException("Manager Not Found For Team");
 
         team.removeManager();
         teamRepository.save(team);
@@ -75,7 +79,7 @@ public class TeamAdminService {
     public void archiveTeam(UUID teamId) {
 
         Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(TeamNotFoundException::new);
 
         team.deactivate();
         teamRepository.save(team);
@@ -85,16 +89,16 @@ public class TeamAdminService {
     public void addToTeam(UUID userId, UUID teamId) {
 
         Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(TeamNotFoundException::new);
 
         User manager = team.getManager();
         if (manager != null && manager.getUserId().equals(userId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("You cannot add Manager as a team member");
 
         boolean isMember = team.getTeamMembers().stream()
                 .anyMatch(user -> user.getUserId().equals(userId));
         if (isMember)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("User Already Team Member");
 
         User user = userService.getUser(userId);
         team.addMember(user);
@@ -108,10 +112,13 @@ public class TeamAdminService {
         Team team = teamService.getTeam(teamId);
         User manager = team.getManager();
         if (manager != null && manager.getUserId().equals(userId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UnsupportedOperationException("Cannot Remove Manager From Members List");
 
-        User user = team.getTeamMembers().stream().filter(member -> member.getUserId().equals(userId))
-                .findFirst().orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+        User user = team.getTeamMembers()
+                .stream()
+                .filter(member -> member.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(UsersNotAvailableException::new);
         team.removeMember(user);
 
         teamRepository.save(team);
