@@ -2,6 +2,9 @@ package com.mordiniaa.backend.security.service.token;
 
 import com.mordiniaa.backend.events.authentication.events.DeactivateSessionAndTokensEvent;
 import com.mordiniaa.backend.events.authentication.events.SessionMisuseEvent;
+import com.mordiniaa.backend.exceptions.RefreshTokenException;
+import com.mordiniaa.backend.exceptions.SessionException;
+import com.mordiniaa.backend.exceptions.SessionIntegrityException;
 import com.mordiniaa.backend.models.Session;
 import com.mordiniaa.backend.security.model.RefreshTokenFamily;
 import com.mordiniaa.backend.security.token.RefreshToken;
@@ -82,23 +85,23 @@ public class RefreshTokenService {
             applicationEventPublisher.publishEvent(
                     new DeactivateSessionAndTokensEvent(family.getId(), userSession.getSessionId(), now)
             );
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Refresh Token Used Or Revoked");
         }
 
         if (!Objects.equals(family.getUserId(), userId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Invalid Refresh Token");
 
         boolean familyExpired = family.getExpiresAt().isBefore(now);
         if (family.isRevoked() || familyExpired) {
             applicationEventPublisher.publishEvent(
                     new DeactivateSessionAndTokensEvent(family.getId(), userSession.getSessionId(), now)
             );
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Session Is Expired");
         }
 
         if (!validateTokensMatch(oldRawToken, entity.getHashedToken())) {
             log.info("Invalid refresh token");
-            throw new RuntimeException();
+            throw new RefreshTokenException("Invalid Refresh Token");
         }
 
         RefreshTokenEntity newTokenEntity = buildRefreshToken(family, now, entity.getId(), newRawToken, roles);
@@ -112,7 +115,7 @@ public class RefreshTokenService {
 
         String userAgent = request.getHeader("User-Agent");
         if (!Objects.equals(userSession.getUserAgent(), userAgent))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new SessionIntegrityException("Session Integrity Validation Failed");
     }
 
     public RefreshToken generateRefreshToken(RefreshTokenEntity entity, String rawToken) {
@@ -122,7 +125,7 @@ public class RefreshTokenService {
 
     public RefreshTokenEntity getRefreshToken(Long tokenId) {
         return refreshTokenRepository.findById(tokenId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new RefreshTokenException("Invalid Refresh Token"));
     }
 
     @Transactional
@@ -165,26 +168,26 @@ public class RefreshTokenService {
 
     public Long getStoredRefreshTokenForSession(UUID sessionId) {
         return refreshTokenRepository.findTokenIdBySessionId(sessionId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new SessionException("No Data About Session Found"));
     }
 
     @Transactional
     public RefreshToken deactivateRefreshToken(UUID userId, UUID sessionId, Long idPart, String tokenPart) {
 
         RefreshTokenEntity entity = refreshTokenRepository.findRefreshTokenEntityByIdAndRefreshTokenFamily_UserId(idPart, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new SessionException("No Data About Session Found"));
 
         RefreshTokenFamily family = entity.getRefreshTokenFamily();
         if (!Objects.equals(family.getUserId(), userId)) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Invalid Refresh Token");
         }
 
         Session session = family.getSession();
         if (!Objects.equals(session.getSessionId(), sessionId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new SessionIntegrityException("Session Integrity Validation Failed");
 
         if (!validateTokensMatch(tokenPart, entity.getHashedToken())) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new RefreshTokenException("Invalid Refresh Token");
         }
 
         refreshTokenFamilyService.deactivateUserAuthenticationFamily(family.getId(), Instant.now());
