@@ -2,6 +2,9 @@ package com.mordiniaa.backend.services.storage.profileImagesStorage;
 
 import com.mordiniaa.backend.config.StorageProperties;
 import com.mordiniaa.backend.events.user.events.UserProfileImageChangedEvent;
+import com.mordiniaa.backend.exceptions.BadRequestException;
+import com.mordiniaa.backend.exceptions.ImageNotFoundException;
+import com.mordiniaa.backend.exceptions.UnexpectedException;
 import com.mordiniaa.backend.models.file.imageStorage.ImageMetadata;
 import com.mordiniaa.backend.models.user.DbUser;
 import com.mordiniaa.backend.repositories.mongo.ImageMetadataRepository;
@@ -138,7 +141,7 @@ public class ImagesStorageService {
             if (uploaded) {
                 removeImage(profileImagesPath, storedName);
             }
-            throw new RuntimeException(e); //TODO: Change In Exceptions Section
+            throw new UnexpectedException("Unknow Error Occurred");
         }
     }
 
@@ -180,7 +183,7 @@ public class ImagesStorageService {
         ClassPathResource resource = new ClassPathResource(storageProperties.getProfileImages().getDefaultImagePath());
 
         if (!resource.exists())
-            throw new RuntimeException("Default avatar not found in resources"); // TODO: Change In Exceptions Section
+            throw new ImageNotFoundException("Default avatar not found in resources");
 
         StreamingResponseBody body = os -> {
             try (InputStream in = resource.getInputStream()) {
@@ -199,15 +202,15 @@ public class ImagesStorageService {
 
     private String baseImageValidation(MultipartFile file, List<String> mimeTypes) {
         if (file.isEmpty())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Invalid File Sent");
 
         String mimetype = file.getContentType();
         if (mimetype == null || !mimeTypes.contains(mimetype))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Unsupported Mimetype");
 
         String originalName = file.getOriginalFilename();
         if (originalName == null || cloudStorageServiceUtils.containsPathSeparator(originalName))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Illegal Characters Detected");
 
         return mimetype;
     }
