@@ -15,6 +15,9 @@ import lombok.*;
 )
 public class APIResponse<T> {
 
+    @Schema(name = "message", description = "Response Message")
     private String message;
+
+    @Schema(name = "data", description = "Generic Field Storing Retrieved Data")
     private T data;
 }
