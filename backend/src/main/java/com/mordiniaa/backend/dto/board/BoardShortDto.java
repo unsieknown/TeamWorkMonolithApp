@@ -14,6 +14,9 @@ import lombok.Setter;
 )
 public class BoardShortDto {
 
+    @Schema(name = "boardId", description = "Id Of The Specific Board")
     private String boardId;
+
+    @Schema(name = "boardName", description = "Name Of The Board")
     private String boardName;
 }
