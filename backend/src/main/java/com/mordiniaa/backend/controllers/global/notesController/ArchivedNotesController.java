@@ -2,6 +2,7 @@ package com.mordiniaa.backend.controllers.global.notesController;
 
 import com.mordiniaa.backend.config.NotesConstants;
 import com.mordiniaa.backend.dto.note.NoteDto;
+import com.mordiniaa.backend.payload.APIExceptionResponse;
 import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.payload.note.NoteDtoCollectionResponse;
 import com.mordiniaa.backend.security.utils.AuthUtils;
@@ -43,15 +44,12 @@ public class ArchivedNotesController {
             summary = "Fetch All Archived Notes"
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Fetch All Archived Notes",
-                    content = @Content(schema = @Schema(implementation = NoteDtoCollectionResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access Denied"
-            )
+            @ApiResponse(responseCode = "200", description = "Fetch All Archived Notes", content = @Content(
+                    schema = @Schema(implementation = NoteDtoCollectionResponse.class)
+            )),
+            @ApiResponse(responseCode = "403", description = "Access Denied", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            ))
     })
     @GetMapping
     public ResponseEntity<NoteDtoCollectionResponse> getAllArchivedNotesForUser(
@@ -71,25 +69,24 @@ public class ArchivedNotesController {
             description = "Changes Archived Status For Note (ON/OFF)"
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Successfully Changed Archived Status"
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid Note Id"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access Denied"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Note Not Found"
-            )
+            @ApiResponse(responseCode = "200", description = "Successfully Changed Archived Status", content = @Content(
+                    schema = @Schema(implementation = APIResponse.class)
+            )),
+            @ApiResponse(responseCode = "400", description = "Invalid Note Id", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "403", description = "Access Denied", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "404", description = "Note Not Found", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            ))
     })
     @PutMapping("/{noteId}")
-    public ResponseEntity<APIResponse<Void>> switchArchived(@PathVariable String noteId) {
+    public ResponseEntity<APIResponse<Void>> switchArchived(
+            @Parameter(in = ParameterIn.PATH, name = "noteId", description = "Id Of Specified Note", required = true, schema = @Schema(implementation = String.class))
+            @PathVariable String noteId
+    ) {
 
         UUID userId = authUtils.authenticatedUserId();
         archivedNotesService.switchArchivedNoteForUser(userId, noteId);
