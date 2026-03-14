@@ -2,6 +2,7 @@ package com.mordiniaa.backend.controllers.global.cloudStorageController;
 
 import com.mordiniaa.backend.dto.file.FileNodeDto;
 import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
+import com.mordiniaa.backend.payload.APIExceptionResponse;
 import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.payload.PageMeta;
 import com.mordiniaa.backend.payload.nodeDto.CollectionNodeDtoResponse;
@@ -46,30 +47,24 @@ public class CloudStorageController {
             description = "User Can Upload File To Specified Node Defined By Parent Id Representing Directory"
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "File Uploaded Successfully. Resource Created"
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid File or Metadata"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Resource Not Found"
-            ),
-            @ApiResponse(
-                    responseCode = "413",
-                    description = "Storage Limit Reached"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access Denied"
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Unknow Error On Server Side"
-            )
+            @ApiResponse(responseCode = "201", description = "File Uploaded Successfully. Resource Created", content = @Content(
+                    schema = @Schema(implementation = APIResponse.class)
+            )),
+            @ApiResponse(responseCode = "400", description = "Invalid File or Metadata", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "404", description = "Resource Not Found", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "413", description = "Storage Limit Reached", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "403", description = "Access Denied", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "500", description = "Unknow Error On Server Side", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            ))
     })
     @PostMapping("/upload")
     public ResponseEntity<APIResponse<Void>> upload(
@@ -97,26 +92,21 @@ public class CloudStorageController {
             description = "Creates Virtual Dir In File Node Format For Chaining Nodes In Structure Requested By User"
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "File Node Created"
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid Data Provided"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access Denied"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Parent Node Not Found"
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Unexpected Error On Server Side"
-            )
+            @ApiResponse(responseCode = "201", description = "File Node Created", content = @Content(
+                    schema = @Schema(implementation = APIResponse.class)
+            )),
+            @ApiResponse(responseCode = "400", description = "Invalid Data Provided", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "403", description = "Access Denied", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "404", description = "Parent Node Not Found",content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "500", description = "Unexpected Error On Server Side", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            ))
     })
     @PostMapping("/create")
     public ResponseEntity<APIResponse<Void>> createDir(
@@ -141,20 +131,16 @@ public class CloudStorageController {
             description = "Returns JSON with files metadata in current directory"
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "List Returned",
-                    content = @Content(
-                            schema = @Schema(implementation = CollectionNodeDtoResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access Denied"
-            )
+            @ApiResponse(responseCode = "200", description = "List Returned", content = @Content(
+                    schema = @Schema(implementation = CollectionNodeDtoResponse.class)
+            )),
+            @ApiResponse(responseCode = "403", description = "Access Denied", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            ))
     })
     @GetMapping("/list")
     public ResponseEntity<CollectionNodeDtoResponse> getResourceList(
+            @Parameter(in = ParameterIn.QUERY, name = "node", description = "Node Id", schema = @Schema(implementation = UUID.class))
             @RequestParam(value = "node", required = false) UUID nodeId
     ) {
 
@@ -187,26 +173,22 @@ public class CloudStorageController {
             description = "Download Specified File"
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "File Downloaded"
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Unsupported Operation"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access Denied"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Resource Not Found"
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Unknown Exception"
-            )
+            @ApiResponse(responseCode = "200", description = "File Downloaded", content = @Content(
+                    mediaType = "application/octet-stream",
+                    schema = @Schema(type = "string", format = "binary")
+            )),
+            @ApiResponse(responseCode = "400", description = "Unsupported Operation", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "403", description = "Access Denied", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "404", description = "Resource Not Found", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "500", description = "Unknown Exception", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            ))
     })
     @GetMapping("/download/{nodeId}")
     public ResponseEntity<StreamingResponseBody> downloadResource(
@@ -223,22 +205,18 @@ public class CloudStorageController {
             description = "Move Resource In Other Place"
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Resource Successfully Moved"
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid Data or Unsupported Operation"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access Denied"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Resource Not Found"
-            )
+            @ApiResponse(responseCode = "200", description = "Resource Successfully Moved", content = @Content(
+                    schema = @Schema(implementation = APIResponse.class)
+            )),
+            @ApiResponse(responseCode = "400", description = "Invalid Data or Unsupported Operation", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "403", description = "Access Denied", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "404", description = "Resource Not Found", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            ))
     })
     @PutMapping("/move")
     public ResponseEntity<APIResponse<Void>> moveResource(
@@ -272,18 +250,13 @@ public class CloudStorageController {
             description = "Deletes Specified File Node. File or Directory With Whole Tree Under It"
     )
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Successfully Deleted"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access Denied"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "File Node Not Found"
-            )
+            @ApiResponse(responseCode = "204", description = "Successfully Deleted"),
+            @ApiResponse(responseCode = "403", description = "Access Denied", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            )),
+            @ApiResponse(responseCode = "404", description = "File Node Not Found", content = @Content(
+                    schema = @Schema(implementation = APIExceptionResponse.class)
+            ))
     })
     @DeleteMapping("/{nodeId}")
     public ResponseEntity<Void> deleteResource(
