@@ -55,10 +55,10 @@ public class ArchivedNotesController {
     })
     @GetMapping
     public ResponseEntity<NoteDtoCollectionResponse> getAllArchivedNotesForUser(
-            @Parameter(in = ParameterIn.QUERY, description = "Page Number Positive Or Zero", content = @Content(schema = @Schema(implementation = Integer.class)))
+            @Parameter(in = ParameterIn.QUERY, description = "Page Number Positive Or Zero", schema = @Schema(implementation = Integer.class))
             @RequestParam(name = "pn", required = false, defaultValue = NotesConstants.PAGE_NUMBER) @PositiveOrZero int pageNumber,
 
-            @Parameter(in = ParameterIn.QUERY, description = "Page Size Positive Max 50", content = @Content(schema = @Schema(implementation = Integer.class)))
+            @Parameter(in = ParameterIn.QUERY, description = "Page Size Positive Max 50", schema = @Schema(implementation = Integer.class))
             @RequestParam(name = "ps", required = false, defaultValue = NotesConstants.PAGE_SIZE) @Positive @Max(50) int pageSize
     ) {
         UUID userId = authUtils.authenticatedUserId();
