@@ -4,7 +4,7 @@ import com.mordiniaa.backend.dto.file.FileNodeDto;
 import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
 import com.mordiniaa.backend.payload.APIResponse;
 import com.mordiniaa.backend.payload.PageMeta;
-import com.mordiniaa.backend.payload.list.CollectionNodeDtoResponse;
+import com.mordiniaa.backend.payload.nodeDto.CollectionNodeDtoResponse;
 import com.mordiniaa.backend.security.utils.AuthUtils;
 import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceCreateResource;
 import com.mordiniaa.backend.services.storage.cloudStorage.CloudStorageServiceDeleteResource;
