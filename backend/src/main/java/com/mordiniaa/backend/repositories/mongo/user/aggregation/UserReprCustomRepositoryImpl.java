@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.repositories.mongo.user.aggregation;
 
+import com.mordiniaa.backend.exceptions.ArgumentNotPresentException;
 import com.mordiniaa.backend.models.user.mongodb.UserRepresentation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -20,7 +21,7 @@ public class UserReprCustomRepositoryImpl implements UserReprCustomRepository {
     public boolean allUsersAvailable(UUID... userIds) {
 
         if (userIds == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new ArgumentNotPresentException("Users Of Interest Not Present In Collection");
 
         Set<UUID> ids = Set.of(userIds);
 
@@ -30,7 +31,7 @@ public class UserReprCustomRepositoryImpl implements UserReprCustomRepository {
     @Override
     public boolean allUsersAvailable(Set<UUID> userIds) {
         if (userIds.isEmpty())
-            throw new RuntimeException(); // TODO:
+            throw new ArgumentNotPresentException("Users Of Interest Not Present In Collection");
 
         Query query = Query.query(
                 Criteria.where("userId").in(userIds)

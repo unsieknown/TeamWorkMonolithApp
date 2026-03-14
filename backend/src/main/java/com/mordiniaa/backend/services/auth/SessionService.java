@@ -25,7 +25,7 @@ public class SessionService {
         Session session = new Session();
         session.setLastActivity(Instant.now());
         session.setIpAddress(request.getRemoteAddr());
-        session.setUserAgent(request.getHeader("user-agent"));
+        session.setUserAgent(request.getHeader("User-Agent"));
 
         return sessionRepository.save(session);
     }
@@ -35,5 +35,9 @@ public class SessionService {
         Set<UUID> sessionIds = sessionRepository.findAllActiveUserSessions(userId);
         sessionRepository.revokeSessionsAndTokens(sessionIds);
         sessionIds.forEach(sessionRedisService::deleteSession);
+    }
+
+    public boolean validateSession(UUID sessionId) {
+        return sessionRepository.existsById(sessionId);
     }
 }

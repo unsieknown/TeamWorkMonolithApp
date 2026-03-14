@@ -1,8 +1,11 @@
 package com.mordiniaa.backend.services.storage.cloudStorage;
 
+import com.mordiniaa.backend.exceptions.BadRequestException;
+import com.mordiniaa.backend.exceptions.FileNodeNotFound;
 import com.mordiniaa.backend.models.file.cloudStorage.FileNode;
 import com.mordiniaa.backend.models.file.cloudStorage.FileNodeBaseMeta;
 import com.mordiniaa.backend.models.file.cloudStorage.NodeType;
+import com.mordiniaa.backend.models.file.cloudStorage.UserStorage;
 import com.mordiniaa.backend.repositories.mysql.FileNodeRepository;
 import com.mordiniaa.backend.services.fileNode.FileNodeService;
 import com.mordiniaa.backend.utils.CloudStorageServiceUtils;
@@ -16,7 +19,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CloudStorageServiceMoveResource {
 
-    private final FileNodeService fileNodeService;
     private final FileNodeRepository fileNodeRepository;
     private final CloudStorageServiceUtils cloudStorageServiceUtils;
 
@@ -24,16 +26,16 @@ public class CloudStorageServiceMoveResource {
     public void moveResourceUp(UUID from, UUID to, UUID userId) {
 
         if (Objects.equals(from, to))
-            throw new RuntimeException(); // TODO: Change In Exception Section
+            throw new BadRequestException("Paths Are The Same");
 
         FileNode source = fileNodeRepository.findNodeByIdAndUserId(from, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new FileNodeNotFound("Requested Resource Not Found"));
 
-        FileNode target = fileNodeRepository.findDirByIdAndOwnerId(to, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+        UserStorage storage = source.getUserStorage();
+        FileNode target = cloudStorageServiceUtils.getParentNode(userId, to, storage);
 
         if (Objects.equals(source.getParentId(), target.getId()))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Invalid Target");
 
         long sourceSize = source.getNodeType().equals(NodeType.DIRECTORY)
                 ? source.getSubTreeSize()
@@ -48,7 +50,7 @@ public class CloudStorageServiceMoveResource {
         }
 
         if (parentMeta == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new FileNodeNotFound("Requested Resource Not Found");
 
         Set<UUID> ids = new HashSet<>(parents.size());
         for (FileNodeBaseMeta p : parents) {
@@ -66,16 +68,16 @@ public class CloudStorageServiceMoveResource {
     public void moveResourceDown(UUID from, UUID to, UUID userId) {
 
         if (Objects.equals(from, to))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Paths Are The Same");
 
         FileNode source = fileNodeRepository.findNodeByIdAndUserId(from, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new FileNodeNotFound("Requested Resource Not Found"));
 
         FileNode target = fileNodeRepository.findDirByIdAndOwnerId(to, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new FileNodeNotFound("Requested Resource Not Found"));
 
         if (!Objects.equals(source.getParentId(), target.getParentId()))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Paths Are The Same");
 
         long sourceSize = source.getNodeType().equals(NodeType.DIRECTORY)
                 ? source.getSubTreeSize()

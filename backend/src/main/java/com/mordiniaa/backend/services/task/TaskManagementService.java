@@ -2,6 +2,10 @@ package com.mordiniaa.backend.services.task;
 
 import com.mordiniaa.backend.dto.task.TaskDetailsDTO;
 import com.mordiniaa.backend.dto.task.TaskShortDto;
+import com.mordiniaa.backend.exceptions.AccessDeniedException;
+import com.mordiniaa.backend.exceptions.BadRequestException;
+import com.mordiniaa.backend.exceptions.BoardNotFoundException;
+import com.mordiniaa.backend.exceptions.UsersNotAvailableException;
 import com.mordiniaa.backend.models.board.BoardMember;
 import com.mordiniaa.backend.models.task.Task;
 import com.mordiniaa.backend.models.task.activity.TaskActivityElement;
@@ -37,11 +41,10 @@ public class TaskManagementService {
 
     public TaskDetailsDTO updateTask(UUID userId, String bId, String tId, PatchTaskDataRequest patchRequest) {
 
-        BiFunction<ObjectId, ObjectId, BoardMembersOnly> boardFunction = (boardId, taskId) -> {
-            return boardAggregationRepository
-                    .findBoardMembersForTask(boardId, userId, taskId)
-                    .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
-        };
+        BiFunction<ObjectId, ObjectId, BoardMembersOnly> boardFunction =
+                (boardId, taskId) -> boardAggregationRepository
+                        .findBoardMembersForTask(boardId, userId, taskId)
+                        .orElseThrow(BoardNotFoundException::new);
 
         BiFunction<BoardMembersOnly, ObjectId, TaskDetailsDTO> taskFunction = (board, taskId) -> {
             BoardMember currentMember = boardUtils.getBoardMember(board, userId);
@@ -51,11 +54,11 @@ public class TaskManagementService {
             UUID taskAuthor = task.getCreatedBy();
 
             if (!userId.equals(boardOwner) && !userId.equals(taskAuthor)) {
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
             }
 
             if (!task.getCreatedBy().equals(userId) && !currentMember.canUpdateTask()) {
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
             }
 
             if (patchRequest.getTitle() != null && !patchRequest.getTitle().isBlank())
@@ -86,18 +89,18 @@ public class TaskManagementService {
 
         boolean result = userReprCustomRepository.allUsersAvailable(usersToCheck);
         if (!result)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UsersNotAvailableException();
 
         ObjectId boardId = mongoIdUtils.getObjectId(bId);
         ObjectId taskId = mongoIdUtils.getObjectId(tId);
 
         BoardMembersOnly board = boardAggregationRepository
                 .findBoardMembersForTask(boardId, assigningId, taskId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(BoardNotFoundException::new);
 
         BoardMember currentUser = boardUtils.getBoardMember(board, assigningId);
         if (!currentUser.canViewBoard())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new AccessDeniedException("You do not have permission to access this resource");
 
         Task task = taskService.findTaskById(taskId);
 
@@ -109,18 +112,18 @@ public class TaskManagementService {
 
         if (!isTaskOwner && !isBoardOwner) {
             if (toAssign.contains(boardOwner) || toAssign.contains(taskOwner))
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
             if (!currentUser.canAssignTask())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
         }
 
         if (!currentUser.getUserId().equals(boardOwner) && toAssign.contains(boardOwner))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new AccessDeniedException("You do not have permission to access this resource");
 
         Set<UUID> assigned = new HashSet<>(task.getAssignedTo());
         assigned.retainAll(toAssign);
         if (!assigned.isEmpty()) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UsersNotAvailableException("One or more users are already assigned");
         }
 
         Set<UUID> membersIds = board.getMembers().stream()
@@ -129,7 +132,7 @@ public class TaskManagementService {
         membersIds.add(assigningId);
 
         if (!membersIds.containsAll(toAssign))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UsersNotAvailableException("One or more users are not part of board members");
 
         task.addMembers(toAssign);
 
@@ -142,16 +145,15 @@ public class TaskManagementService {
 
     public void removeUserFromTask(UUID userId, UUID toDeleteId, String bId, String tId) {
 
-        BiFunction<ObjectId, ObjectId, BoardMembersOnly> boardFunction = (boardId, taskId) -> {
-            return boardAggregationRepository
-                    .findBoardMembersForTask(boardId, userId, taskId)
-                    .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
-        };
+        BiFunction<ObjectId, ObjectId, BoardMembersOnly> boardFunction =
+                (boardId, taskId) -> boardAggregationRepository
+                        .findBoardMembersForTask(boardId, userId, taskId)
+                        .orElseThrow(BoardNotFoundException::new);
 
-        BiFunction<BoardMembersOnly, ObjectId, TaskShortDto> taskFunction =  (board, taskId) -> {
+        BiFunction<BoardMembersOnly, ObjectId, TaskShortDto> taskFunction = (board, taskId) -> {
             BoardMember currentMember = boardUtils.getBoardMember(board, userId);
             if (!currentMember.canViewBoard())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             Task task = taskService.findTaskById(taskId);
 
@@ -163,16 +165,16 @@ public class TaskManagementService {
 
             if (!isTaskOwner && !isBoardOwner) {
                 if (toDeleteId.equals(taskOwner) || toDeleteId.equals(boardOwner))
-                    throw new RuntimeException(); // TODO: Change In Exceptions Section
+                    throw new AccessDeniedException("You are not owner of this resource");
                 if (!currentMember.canUnassignTask())
-                    throw new RuntimeException(); // TODO: Change In Exceptions Section
+                    throw new AccessDeniedException("You do not have permission to access this resource");
             }
 
             if (!currentMember.getUserId().equals(boardOwner) && toDeleteId.equals(boardOwner))
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You don't have permission to remove these user from task");
 
             if (!task.getAssignedTo().contains(toDeleteId))
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new UsersNotAvailableException("User Not Assigned To This Task");
 
             task.removeMember(toDeleteId);
 

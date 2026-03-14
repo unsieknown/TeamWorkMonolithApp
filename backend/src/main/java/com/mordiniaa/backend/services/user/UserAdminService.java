@@ -5,6 +5,7 @@ import com.mordiniaa.backend.dto.user.UserDto;
 import com.mordiniaa.backend.events.user.events.UserCreatedEvent;
 import com.mordiniaa.backend.events.user.events.UserDeleteEvent;
 import com.mordiniaa.backend.events.user.events.UserUsernameChangedEvent;
+import com.mordiniaa.backend.exceptions.*;
 import com.mordiniaa.backend.mappers.user.UserMapper;
 import com.mordiniaa.backend.models.user.mysql.*;
 import com.mordiniaa.backend.repositories.mysql.AddressRepository;
@@ -14,14 +15,19 @@ import com.mordiniaa.backend.repositories.mysql.UserRepository;
 import com.mordiniaa.backend.request.user.AddressRequest;
 import com.mordiniaa.backend.request.user.ContactDataRequest;
 import com.mordiniaa.backend.request.user.CreateUserRequest;
+import com.mordiniaa.backend.request.user.PasswordRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserAddressRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserContactDataRequest;
 import com.mordiniaa.backend.request.user.patch.PatchUserDataRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -39,6 +45,7 @@ public class UserAdminService {
     private final UserService userService;
     private final AddressRepository addressRepository;
     private final ContactRepository contactRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserDto createUser(CreateUserRequest request) {
@@ -47,12 +54,16 @@ public class UserAdminService {
         String lastName = request.getLastname().trim();
 
         if (userRepository.existsUserByFirstNameAndLastName(firstName, lastName))
-            throw new RuntimeException();
+            throw new BadRequestException("User Already Exists");
 
-        String login = generateUniqueLogin(firstName, lastName);
+        String login = request.getUsername() != null
+                ? request.getUsername()
+                : generateUniqueLogin(firstName, lastName);
 
-        Role userRole = roleRepository.findRoleByAppRole(AppRole.ROLE_USER)
-                .orElseThrow(RuntimeException::new); //TODO: Change In Exceptions Section
+        Role userRole = roleRepository.findRoleByAppRole(request.getRole())
+                .orElseGet(() -> roleRepository.findRoleByAppRole(AppRole.ROLE_USER)
+                        .orElseThrow(RoleNotFoundException::new)
+                );
 
         User newUser = new User();
         newUser.setFirstName(firstName);
@@ -96,7 +107,7 @@ public class UserAdminService {
         String lastName = request.getLastname();
 
         if (firstName == null && lastName == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadCredentialsException("This User Already Exists");
 
         User user = userService.getUser(userId);
 
@@ -133,7 +144,7 @@ public class UserAdminService {
         }
 
         address = addressRepository.findByIdAndUser(addressId, user)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(AddressNotFoundException::new);
 
         if (request.getCountry() != null) address.setCountry(request.getCountry());
         if (request.getCity() != null) address.setCity(request.getCity());
@@ -161,7 +172,7 @@ public class UserAdminService {
         }
 
         contact = contactRepository.findByIdAndUser(contactDataId, user)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(ContactNotFoundException::new);
 
         if (request.getCountryCallingCode() != null) contact.setCountryCallingCode(request.getCountryCallingCode());
         if (request.getEmail() != null) contact.setEmail(request.getEmail());
@@ -170,12 +181,13 @@ public class UserAdminService {
         contactRepository.save(contact);
     }
 
+    @Transactional
     public void deactivateUser(UUID userId) {
 
         try {
             mongoUserService.checkUserAvailability(userId);
-        } catch (RuntimeException e) { // TODO: Change In Exceptions Section
-            throw new RuntimeException("User already inactive"); // TODO: Change In Exceptions Section
+        } catch (UsersNotAvailableException e) {
+            throw new UsersNotAvailableException("User Already Not Available");
         }
 
         userRepository.updateDeletedByUserId(true, userId);
@@ -199,8 +211,18 @@ public class UserAdminService {
 
     private void setupFullAddress(Address address, AddressRequest r) {
 
-        if (r.getStreet() == null || r.getCity() == null || r.getCountry() == null || r.getZipCode() == null || r.getDistrict() == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        List<String> missingFields = new ArrayList<>();
+        if (r.getStreet() == null) missingFields.add("Street is missing.");
+        if (r.getCity() == null) missingFields.add("City is missing.");
+        if (r.getCountry() == null) missingFields.add("Country is missing.");
+        if (r.getZipCode() == null) missingFields.add("Zipcode is missing.");
+        if (r.getDistrict() == null) missingFields.add("District is missing.");
+
+        if (!missingFields.isEmpty()) {
+            String message = String.join(" ", missingFields);
+            throw new AddressValidationException(message);
+        }
+
         address.setStreet(r.getStreet().trim());
         address.setCountry(r.getCountry().trim());
         address.setCity(r.getCity().trim());
@@ -210,10 +232,35 @@ public class UserAdminService {
 
     private void setupFullContactData(Contact contact, ContactDataRequest r) {
 
-        if (r.getCountryCallingCode() == null || r.getEmail() == null || r.getPhoneNumber() == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        List<String> missingProperties = new ArrayList<>();
+        if (r.getCountryCallingCode() == null) missingProperties.add("Calling Code Is Missing.");
+        if (r.getEmail() == null) missingProperties.add("Email Is Missing.");
+        if (r.getPhoneNumber() == null) missingProperties.add("Phone Number Is Missing.");
+
+        if (!missingProperties.isEmpty()) {
+            String message = String.join(" ", missingProperties);
+            throw new ContactDataValidationException(message);
+        }
+
         contact.setEmail(r.getEmail().trim());
         contact.setCountryCallingCode(r.getCountryCallingCode().trim());
         contact.setPhoneNumber(r.getPhoneNumber().trim());
+    }
+
+    @Transactional
+    public void setUserPassword(UUID userId, PasswordRequest passwordRequest) {
+
+        User user = userRepository.findUserByUserIdAndDeletedFalse(userId)
+                .orElseThrow(() -> new BadRequestException("User Not Found"));
+
+        String password = passwordRequest.getPassword();
+        String repeatedPassword = passwordRequest.getRepeatedPassword();
+
+        if (!password.equals(repeatedPassword))
+            throw new BadRequestException("Password Missmatch");
+
+        String encodedPassword = passwordEncoder.encode(password);
+        user.setPassword(encodedPassword);
+        userRepository.save(user);
     }
 }

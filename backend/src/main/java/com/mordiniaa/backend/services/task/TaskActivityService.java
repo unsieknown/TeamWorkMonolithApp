@@ -5,6 +5,8 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import com.mordiniaa.backend.dto.task.TaskDetailsDTO;
 import com.mordiniaa.backend.dto.task.TaskShortDto;
+import com.mordiniaa.backend.exceptions.*;
+import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
 import com.mordiniaa.backend.mappers.task.TaskMapper;
 import com.mordiniaa.backend.models.board.BoardMember;
 import com.mordiniaa.backend.models.board.TaskCategory;
@@ -44,40 +46,42 @@ public class TaskActivityService {
     @Transactional
     public TaskShortDto changeTaskPosition(UUID userId, String bId, String tId, UpdateTaskPositionRequest request) {
 
-        BiFunction<ObjectId, ObjectId, BoardWithTaskCategories> boardFunction = (boardId, taskId) -> {
-            return boardAggregationRepository.findBoardForTaskWithCategories(boardId, userId, taskId)
-                    .orElseThrow(RuntimeException::new); // TODO: Change in Exceptions Section
-        };
+        BiFunction<ObjectId, ObjectId, BoardWithTaskCategories> boardFunction =
+                (boardId, taskId) -> boardAggregationRepository
+                        .findBoardForTaskWithCategories(boardId, userId, taskId)
+                        .orElseThrow(() -> new BoardNotFoundException("Board Not Found")
+                        );
 
         BiFunction<BoardWithTaskCategories, ObjectId, TaskShortDto> taskFunction = (board, taskId) -> {
             BoardMember currentMember = boardUtils.getBoardMember(board, userId);
 
             if (!currentMember.canViewBoard())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to perform this operation");
 
             TaskCategory taskCategory = board.getTaskCategories()
                     .stream()
                     .filter(tC -> tC.getTasks().contains(taskId))
-                    .findFirst().orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                    .findFirst()
+                    .orElseThrow(() -> new TaskCategoryNotFoundException("Task Category Not Found"));
 
             Task task = taskService.findTaskById(taskId);
 
             UUID boardOwner = board.getOwner().getUserId();
             if (task.getCreatedBy().equals(boardOwner) && !userId.equals(boardOwner))
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to perform this operation");
 
             PositionUpdate positionUpdate = new PositionUpdate(mongoTemplate);
             if (request.getNewTaskCategory() != null) {
 
                 if (!currentMember.canMoveTaskBetweenCategories())
-                    throw new RuntimeException();
+                    throw new AccessDeniedException("You do not have permission to perform this operation");
 
                 String newCategory = request.getNewTaskCategory();
                 TaskCategory newTaskCategory = board.getTaskCategories()
                         .stream()
                         .filter(tC -> tC.getCategoryName().equals(newCategory))
                         .findFirst()
-                        .orElseThrow(RuntimeException::new); // TODO: Change In Category Section
+                        .orElseThrow(() -> new TaskCategoryNotFoundException("Task Category Not Found"));
 
                 Update pollPushUpdate = new Update()
                         .pull("taskCategories.$[from].tasks", taskId)
@@ -104,7 +108,7 @@ public class TaskActivityService {
             } else {
 
                 if (task.getPositionInCategory() == request.getNewPosition())
-                    throw new RuntimeException(); // TODO: Change In Exceptions Section
+                    throw new UnsupportedOperationException("Category is already at the specified position");
 
                 if (task.getPositionInCategory() < request.getNewPosition()) {
                     positionUpdate.moveUpInCategory(taskCategory, task.getPositionInCategory(), request.getNewPosition());
@@ -116,7 +120,7 @@ public class TaskActivityService {
 
             task.setPositionInCategory(request.getNewPosition());
             task = taskRepository.save(task);
-            
+
             return taskMapper.toShortenedDto(task);
         };
         return taskService.executeTaskOperation(userId, bId, tId, boardFunction, taskFunction);
@@ -124,15 +128,16 @@ public class TaskActivityService {
 
     public TaskDetailsDTO writeComment(UUID userId, String bId, String tId, UploadCommentRequest uploadCommentRequest) {
 
-        BiFunction<ObjectId, ObjectId, BoardWithTaskCategories> boardFunction = (boardId, taskId) -> {
-            return boardAggregationRepository.findBoardForTaskWithCategories(boardId, userId, taskId)
-                    .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
-        };
+        BiFunction<ObjectId, ObjectId, BoardWithTaskCategories> boardFunction =
+                (boardId, taskId) -> boardAggregationRepository
+                        .findBoardForTaskWithCategories(boardId, userId, taskId)
+                        .orElseThrow(() -> new BoardNotFoundException("Board Not Found")
+                        );
 
         BiFunction<BoardWithTaskCategories, ObjectId, TaskDetailsDTO> taskFunction = (board, taskId) -> {
             BoardMember currentMember = boardUtils.getBoardMember(board, userId);
             if (!currentMember.canCommentTask())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             Task task = taskService.findTaskById(taskId);
 
@@ -140,7 +145,7 @@ public class TaskActivityService {
             boolean isAssigned = task.getAssignedTo().contains(currentMember.getUserId());
             boolean boardOwner = currentMember.getUserId().equals(board.getOwner().getUserId());
             if (!taskOwner && !isAssigned && !boardOwner)
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             TaskComment taskComment = new TaskComment(userId);
             taskComment.setComment(uploadCommentRequest.getComment());
@@ -157,29 +162,30 @@ public class TaskActivityService {
     public TaskDetailsDTO updateComment(UUID userId, String bId, String tId, UploadCommentRequest uploadCommentRequest) {
 
         if (uploadCommentRequest.getCommentId() == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Comment Not Present");
 
-        BiFunction<ObjectId, ObjectId, BoardWithTaskCategories> boardFunction = (boardId, taskId) -> {
-            return boardAggregationRepository.findBoardForTaskWithCategories(boardId, userId, taskId)
-                    .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
-        };
+        BiFunction<ObjectId, ObjectId, BoardWithTaskCategories> boardFunction = (boardId, taskId) ->
+                boardAggregationRepository
+                        .findBoardForTaskWithCategories(boardId, userId, taskId)
+                        .orElseThrow(() -> new BoardNotFoundException("Board Not Found")
+                        );
 
         BiFunction<BoardWithTaskCategories, ObjectId, TaskDetailsDTO> taskFunction = (board, taskId) -> {
             BoardMember currentMember = boardUtils.getBoardMember(board, userId);
             if (!currentMember.canViewBoard())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             Task task = taskService.findTaskById(taskId);
             TaskComment taskComment = getTaskComment(task, uploadCommentRequest.getCommentId());
 
             if (taskComment.isUpdated())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new TaskAlreadyUpdatedException();
 
             if (!taskComment.getUser().equals(userId))
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             if (!currentMember.canUpdateOwnComment())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             taskComment.setComment(uploadCommentRequest.getComment());
             taskComment.setUpdated(true);
@@ -195,15 +201,16 @@ public class TaskActivityService {
 
     public TaskDetailsDTO deleteComment(UUID userId, String bId, String tId, UUID commentId) {
 
-        BiFunction<ObjectId, ObjectId, BoardWithTaskCategories> boardFunction = (boardId, taskId) -> {
-            return boardAggregationRepository.findBoardForTaskWithCategories(boardId, userId, taskId)
-                    .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
-        };
+        BiFunction<ObjectId, ObjectId, BoardWithTaskCategories> boardFunction =
+                (boardId, taskId) -> boardAggregationRepository
+                        .findBoardForTaskWithCategories(boardId, userId, taskId)
+                        .orElseThrow(() -> new BoardNotFoundException("Board Not Found")
+                        );
 
         BiFunction<BoardWithTaskCategories, ObjectId, TaskDetailsDTO> taskFunction = (board, taskId) -> {
             BoardMember currentMember = boardUtils.getBoardMember(board, userId);
             if (!currentMember.canViewBoard())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             Task task = taskService.findTaskById(taskId);
             TaskComment taskComment = getTaskComment(task, commentId);
@@ -211,16 +218,16 @@ public class TaskActivityService {
             UUID boardOwner = board.getOwner().getUserId();
             UUID commentAuthor = taskComment.getUser();
             if (commentAuthor.equals(boardOwner) && !userId.equals(boardOwner))
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             if (!currentMember.getUserId().equals(commentAuthor) && !currentMember.canDeleteAnyComment())
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new AccessDeniedException("You do not have permission to access this resource");
 
             boolean result = task.getActivityElements()
                     .removeIf(element -> element instanceof TaskComment tc && tc.getCommentId().equals(commentId));
 
             if (!result)
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new TaskCommentNotFound();
 
             Task savedTask = taskRepository.save(task);
 
@@ -237,6 +244,7 @@ public class TaskActivityService {
                 .filter(taskActivityElement -> taskActivityElement instanceof TaskComment)
                 .map(element -> (TaskComment) element)
                 .filter(tC -> tC.getCommentId().equals(commentId))
-                .findFirst().orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .findFirst()
+                .orElseThrow(TaskCommentNotFound::new);
     }
 }

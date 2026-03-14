@@ -1,8 +1,13 @@
 package com.mordiniaa.backend.security.filters;
 
+import com.mordiniaa.backend.config.JwtProperties;
+import com.mordiniaa.backend.exceptions.InvalidJwtException;
+import com.mordiniaa.backend.exceptions.SessionExpiredException;
 import com.mordiniaa.backend.security.objects.JwtPrincipal;
 import com.mordiniaa.backend.security.service.JwtService;
 import com.mordiniaa.backend.security.service.SessionRedisService;
+import com.mordiniaa.backend.security.service.token.RefreshTokenService;
+import com.mordiniaa.backend.services.auth.SessionService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -13,6 +18,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,9 +39,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Value("${security.app.jwt.token-name}")
+    @Value("${security.app.jwt.tokenName}")
     private String jwtTokenName;
 
+    private final JwtProperties jwtProperties;
+    private final RefreshTokenService refreshTokenService;
+    private final SessionService sessionService;
     private final SessionRedisService sessionRedisService;
     private final JwtService jwtService;
 
@@ -44,6 +54,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+
+        String requestUri = request.getRequestURI();
+        if (jwtProperties.getWhiteList().contains(requestUri)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         SecurityContext context = SecurityContextHolder.getContext();
         if (context.getAuthentication() == null) {
@@ -57,8 +73,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Claims claims = jwtService.parseAndValidate(jwtToken);
                 UUID sessionId = jwtService.extractSessionId(claims);
-                if (!sessionRedisService.validateSession(sessionId))
-                    throw new RuntimeException(); // TODO: Change In Exceptions Section
+                if (!sessionRedisService.validateSession(sessionId)) {
+                    if (!sessionService.validateSession(sessionId)) {
+                        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from(jwtTokenName).path("/").build().toString());
+                        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenService.clearUserToken().toString());
+                        throw new SessionExpiredException("Session expired or invalid");
+                    }
+                }
 
                 UUID userId = jwtService.extractUserId(claims);
 
@@ -82,8 +103,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 context.setAuthentication(authenticationToken);
             } catch (JwtException e) {
-                filterChain.doFilter(request, response);
-                return;
+                throw new InvalidJwtException("Invalid JWT token");
             }
         }
         filterChain.doFilter(request, response);

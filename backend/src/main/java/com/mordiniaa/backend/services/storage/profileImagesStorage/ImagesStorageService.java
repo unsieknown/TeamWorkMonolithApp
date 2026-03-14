@@ -2,6 +2,9 @@ package com.mordiniaa.backend.services.storage.profileImagesStorage;
 
 import com.mordiniaa.backend.config.StorageProperties;
 import com.mordiniaa.backend.events.user.events.UserProfileImageChangedEvent;
+import com.mordiniaa.backend.exceptions.BadRequestException;
+import com.mordiniaa.backend.exceptions.ImageNotFoundException;
+import com.mordiniaa.backend.exceptions.UnexpectedException;
 import com.mordiniaa.backend.models.file.imageStorage.ImageMetadata;
 import com.mordiniaa.backend.models.user.DbUser;
 import com.mordiniaa.backend.repositories.mongo.ImageMetadataRepository;
@@ -16,6 +19,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -58,10 +62,11 @@ public class ImagesStorageService {
         };
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(meta.getExtension()))
+                .contentType(MediaType.parseMediaType("image/" + meta.getExtension()))
                 .body(body);
     }
 
+    @Transactional
     public void addProfileImage(DbUser user, MultipartFile file) {
 
         StorageProperties.ProfileImages profileImages = storageProperties.getProfileImages();
@@ -77,42 +82,46 @@ public class ImagesStorageService {
             case "jpeg", "jpg" -> "jpg";
             default -> "png";
         };
-        String storedName = cloudStorageServiceUtils.buildStorageKey().concat(".".concat(ext));
+
+        String newImageName = cloudStorageServiceUtils.buildStorageKey().concat(".".concat(ext));
         String profileImagesPath = profileImages.getPath();
 
         try {
             addImage(
                     profileImagesPath,
-                    storedName,
+                    newImageName,
                     ext,
                     profileImages.getProfileWidth(),
                     profileImages.getProfileHeight(),
                     file
             );
 
-            if (metadata != null) {
-                storageProvider.delete(
-                        profileImagesPath,
-                        metadata.getStoredName()
-                );
-            }
+            ImageMetadata savedMeta = imageMetadataRepository.save(ImageMetadata.builder()
+                    .originalName(originalName)
+                    .storedName(newImageName)
+                    .extension(ext)
+                    .ownerId(user.getUserId())
+                    .size(file.getSize())
+                    .build()
+            );
+
+            updateUserImageKey(user.getUserId(), savedMeta.getId().toHexString());
         } catch (Exception e) {
             if (metadata != null) {
                 imageMetadataRepository.save(metadata);
+                updateUserImageKey(user.getUserId(), metadata.getId().toHexString());
+            } else {
+                updateUserImageKey(user.getUserId(), profileImages.getDefaultImageKey());
             }
             throw new RuntimeException(e);
         }
 
-        ImageMetadata savedMeta = imageMetadataRepository.save(ImageMetadata.builder()
-                .originalName(originalName)
-                .storedName(storedName)
-                .ownerId(user.getUserId())
-                .extension(file.getContentType())
-                .size(file.getSize())
-                .build()
-        );
-
-        updateUserImageKey(user.getUserId(), savedMeta.getId().toHexString());
+        if (metadata != null) {
+            storageProvider.delete(
+                    profileImagesPath,
+                    metadata.getStoredName()
+            );
+        }
     }
 
     public void addImage(String profileImagesPath, String storedName, String ext, int width, int height, MultipartFile file) {
@@ -130,15 +139,20 @@ public class ImagesStorageService {
             uploaded = true;
         } catch (Exception e) {
             if (uploaded) {
-                storageProvider.delete(
-                        profileImagesPath,
-                        storedName
-                );
+                removeImage(profileImagesPath, storedName);
             }
-            throw new RuntimeException(e); //TODO: Change In Exceptions Section
+            throw new UnexpectedException("Unknow Error Occurred");
         }
     }
 
+    private void removeImage(String profileImagesPath, String storedName) {
+        storageProvider.delete(
+                profileImagesPath,
+                storedName
+        );
+    }
+
+    @Transactional
     public void setDefaultImage(DbUser user) {
 
         ImageMetadata metadata = imageMetadataRepository.findImageMetadataByOwnerId(user.getUserId())
@@ -155,7 +169,8 @@ public class ImagesStorageService {
             imageMetadataRepository.deleteById(metadata.getId());
     }
 
-    private void updateUserImageKey(UUID userId, String imageKey) {
+    @Transactional
+    public void updateUserImageKey(UUID userId, String imageKey) {
 
         userRepository.updateImageKeyByUserId(imageKey, userId);
         applicationEventPublisher.publishEvent(
@@ -168,7 +183,7 @@ public class ImagesStorageService {
         ClassPathResource resource = new ClassPathResource(storageProperties.getProfileImages().getDefaultImagePath());
 
         if (!resource.exists())
-            throw new RuntimeException("Default avatar not found in resources"); // TODO: Change In Exceptions Section
+            throw new ImageNotFoundException("Default avatar not found in resources");
 
         StreamingResponseBody body = os -> {
             try (InputStream in = resource.getInputStream()) {
@@ -187,15 +202,15 @@ public class ImagesStorageService {
 
     private String baseImageValidation(MultipartFile file, List<String> mimeTypes) {
         if (file.isEmpty())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Invalid File Sent");
 
         String mimetype = file.getContentType();
         if (mimetype == null || !mimeTypes.contains(mimetype))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Unsupported Mimetype");
 
         String originalName = file.getOriginalFilename();
         if (originalName == null || cloudStorageServiceUtils.containsPathSeparator(originalName))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Illegal Characters Detected");
 
         return mimetype;
     }

@@ -53,4 +53,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     void updatePasswordByUserId(UUID userId, String newPassword);
 
     Optional<User> findUserByRole_AppRole(AppRole roleAppRole);
+
+    Optional<User> findUserByUserIdAndDeletedFalse(UUID userId);
+
+    Optional<User> findUserByUserIdAndDeletedFalseAndRole_AppRole(UUID userId, AppRole roleAppRole);
+
+    Optional<User> findUserByUsernameAndDeletedFalse(String username);
 }

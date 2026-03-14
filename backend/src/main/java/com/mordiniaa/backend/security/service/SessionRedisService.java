@@ -1,6 +1,7 @@
 package com.mordiniaa.backend.security.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +12,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class SessionRedisService {
+
+    @Value("${redis.keys.session}")
+    private String sessionKey;
 
     private final StringRedisTemplate redis;
 
@@ -45,6 +49,6 @@ public class SessionRedisService {
     }
 
     private String key(UUID sessionId) {
-        return "session:".concat(sessionId.toString());
+        return sessionKey + ":" + sessionId.toString();
     }
 }

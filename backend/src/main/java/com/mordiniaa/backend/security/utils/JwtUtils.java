@@ -21,7 +21,7 @@ public class JwtUtils {
 
         return ResponseCookie.from(cookieName, value)
                 .maxAge(duration)
-                .httpOnly(false)
+                .httpOnly(true)
                 .secure(false)
                 .path("/")
                 .build();

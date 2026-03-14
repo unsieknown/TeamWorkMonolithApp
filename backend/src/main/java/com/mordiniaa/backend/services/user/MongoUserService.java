@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.services.user;
 
+import com.mordiniaa.backend.exceptions.UsersNotAvailableException;
 import com.mordiniaa.backend.models.user.mongodb.UserRepresentation;
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.repositories.mongo.user.UserRepresentationRepository;
@@ -10,6 +11,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -26,14 +28,14 @@ public class MongoUserService {
     public void checkUserAvailability(UUID... userIds) {
         boolean result = userReprCustomRepository.allUsersAvailable(userIds);
         if (!result) {
-            throw new RuntimeException(); //TODO: Change in Exceptions Section
+            throw new UsersNotAvailableException();
         }
     }
 
     public void createUserRepresentation(UUID userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BadCredentialsException("User Not Found"));
 
         UserRepresentation mongoUser = new UserRepresentation();
         mongoUser.setUsername(user.getUsername());

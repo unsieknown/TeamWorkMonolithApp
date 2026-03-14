@@ -2,6 +2,8 @@ package com.mordiniaa.backend.services.storage.cloudStorage;
 
 import com.mordiniaa.backend.config.StorageProperties;
 import com.mordiniaa.backend.dto.file.FileNodeDto;
+import com.mordiniaa.backend.exceptions.FileNodeNotFound;
+import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
 import com.mordiniaa.backend.mappers.file.FIleNodeMapper;
 import com.mordiniaa.backend.models.file.cloudStorage.*;
 import com.mordiniaa.backend.repositories.mysql.FileNodeRepository;
@@ -40,16 +42,17 @@ public class CloudStorageServiceGetResource {
             return List.of();
         }
 
-        return fileNodeRepository.findFileNodesByParentIdAndUserStorage_UserId(rootNode.getId(), userId)
+        return fileNodeRepository.findFileNodesByParentIdAndUserStorage_UserIdAndDeletedFalse(rootNode.getId(), userId)
                 .stream()
                 .map(node -> fileNodeMapper.toDto(node, "/"))
                 .toList();
     }
 
+    @Transactional
     public List<FileNodeDto> getResourceList(UUID userId, UUID dirId) {
 
         FileNode requestedDir = fileNodeRepository.findDirByIdAndOwnerId(dirId, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new FileNodeNotFound("Requested Resource Not Found"));
 
         List<UUID> ids = Arrays.stream(requestedDir.getMaterializedPath().split("/"))
                 .filter(s -> !s.isBlank())
@@ -72,7 +75,7 @@ public class CloudStorageServiceGetResource {
         }
 
         String path = sb.toString();
-        return fileNodeRepository.findFileNodesByParentIdAndUserStorage_UserId(requestedDir.getId(), userId)
+        return fileNodeRepository.findFileNodesByParentIdAndUserStorage_UserIdAndDeletedFalse(requestedDir.getId(), userId)
                 .stream()
                 .map(node -> fileNodeMapper.toDto(node, path))
                 .toList();
@@ -81,10 +84,10 @@ public class CloudStorageServiceGetResource {
     public ResponseEntity<StreamingResponseBody> downloadResource(UUID userId, UUID resourceId) {
 
         FileNode node = fileNodeRepository.findNodeByIdAndUserId(resourceId, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new FileNodeNotFound("Requested Resource Not Found"));
 
         if (node.getNodeType().equals(NodeType.ROOT))
-            throw new RuntimeException();
+            throw new UnsupportedOperationException("Cannot Download This Dir");
 
         StreamingResponseBody streamingResponseBody;
         if (node.getNodeType().equals(NodeType.FILE))

@@ -2,6 +2,8 @@ package com.mordiniaa.backend.services.board;
 
 import com.mordiniaa.backend.dto.board.BoardDetailsDto;
 import com.mordiniaa.backend.dto.board.BoardShortDto;
+import com.mordiniaa.backend.exceptions.AccessDeniedException;
+import com.mordiniaa.backend.exceptions.BoardNotFoundException;
 import com.mordiniaa.backend.mappers.board.BoardMapper;
 import com.mordiniaa.backend.models.board.Board;
 import com.mordiniaa.backend.models.board.BoardMember;
@@ -45,14 +47,14 @@ public class BoardUserService {
         ObjectId boardId = mongoIdUtils.getObjectId(bId);
 
         BoardMembersOnly b = boardAggregationRepositoryImpl.findBoardMembers(boardId, userId, teamId)
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         BoardMember currentMember = boardUtils.getBoardMember(b, userId);
         if (!currentMember.canViewBoard())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new AccessDeniedException("You do not have permission to perform this operation");
 
         BoardFull board = boardAggregationRepositoryImpl.findBoardWithTasksByUserIdAndBoardIdAndTeamId(userId, boardId, teamId)
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
         return boardMapper.toDetailedDto(board);
     }
 }

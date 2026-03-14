@@ -16,6 +16,7 @@ public class StorageProperties {
 
     private ProfileImages profileImages;
     private CloudStorage cloudStorage;
+    private BannedIps bannedIps;
 
     @Getter
     @Setter
@@ -31,6 +32,12 @@ public class StorageProperties {
     @Getter
     @Setter
     public static class CloudStorage {
+        private String path;
+    }
+
+    @Getter
+    @Setter
+    public static class BannedIps {
         private String path;
     }
 }

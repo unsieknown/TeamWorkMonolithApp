@@ -1,5 +1,11 @@
 package com.mordiniaa.backend.services.team;
 
+import com.mordiniaa.backend.dto.team.TeamShortDto;
+import com.mordiniaa.backend.exceptions.BadRequestException;
+import com.mordiniaa.backend.exceptions.TeamNotFoundException;
+import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
+import com.mordiniaa.backend.exceptions.UsersNotAvailableException;
+import com.mordiniaa.backend.mappers.team.TeamMapper;
 import com.mordiniaa.backend.models.team.Team;
 import com.mordiniaa.backend.models.user.mysql.AppRole;
 import com.mordiniaa.backend.models.user.mysql.User;
@@ -18,87 +24,81 @@ import java.util.UUID;
 public class TeamAdminService {
 
     private final TeamRepository teamRepository;
-    private final UserRepository userRepository;
     private final UserService userService;
     private final TeamService teamService;
+    private final TeamMapper teamMapper;
+    private final UserRepository userRepository;
 
-    //Protected On Method Lvl For ADMIN
     @Transactional
-//    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
-    public void createTeam(TeamCreationRequest teamCreationRequest) {
+    public TeamShortDto createTeam(TeamCreationRequest teamCreationRequest) {
 
         String teamName = teamCreationRequest.getTeamName().trim();
         String lowerTeamName = teamName.toLowerCase();
         if (teamRepository.existsByTeamNameIgnoreCase(lowerTeamName))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new TeamNotFoundException();
 
         Team team = new Team(lowerTeamName);
         team.setPresentationName(teamName);
 
-        teamRepository.save(team);
+        return teamMapper.toShortDto(teamRepository.save(team));
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
-    public void assignManagerToTeam(UUID userId, UUID teamId) {
+    public TeamShortDto assignManagerToTeam(UUID userId, UUID teamId) {
 
-        User user = userService.getUser(userId);
+        User user = userService.findNonDeletedUserAndAppRole(userId, AppRole.ROLE_MANAGER);
 
-        if (!user.getRole().getAppRole().equals(AppRole.ROLE_MANAGER))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
-
-        Team team = teamService.getTeam(teamId);
+        Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
+                .orElseThrow(TeamNotFoundException::new);
 
         if (team.getManager() != null) {
             User manager = team.getManager();
             if (manager.getUserId().equals(userId))
                 // This manager Already Assigned
-                throw new RuntimeException(); // TODO: Change In Exceptions Section
+                throw new BadRequestException("Manager Already Assigned");
             // Other Manager Already Assigned
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Other Manager Is Already Assigned");
         }
 
         team.setManager(user);
-        teamRepository.save(team);
+        return teamMapper.toShortDto(teamRepository.save(team));
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
     public void removeManagerFromTeam(UUID teamId) {
 
         Team team = teamService.getTeam(teamId);
         if (team.getManager() == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UsersNotAvailableException("Manager Not Found For Team");
 
         team.removeManager();
         teamRepository.save(team);
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
     public void archiveTeam(UUID teamId) {
 
-        Team team = teamService.getTeam(teamId);
-        if (!team.isActive())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+        Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
+                .orElseThrow(TeamNotFoundException::new);
 
         team.deactivate();
         teamRepository.save(team);
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
     public void addToTeam(UUID userId, UUID teamId) {
 
-        Team team = teamService.getTeam(teamId);
+        Team team = teamRepository.findTeamByTeamIdAndActiveTrue(teamId)
+                .orElseThrow(TeamNotFoundException::new);
+
         User manager = team.getManager();
         if (manager != null && manager.getUserId().equals(userId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("You cannot add Manager as a team member");
 
         boolean isMember = team.getTeamMembers().stream()
                 .anyMatch(user -> user.getUserId().equals(userId));
         if (isMember)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("User Already Team Member");
 
         User user = userService.getUser(userId);
         team.addMember(user);
@@ -107,16 +107,18 @@ public class TeamAdminService {
     }
 
     @Transactional
-    //    @PreAuthorize("hasRole('ADMIN')") TODO: In Future
     public void removeFromTeam(UUID userId, UUID teamId) {
 
         Team team = teamService.getTeam(teamId);
         User manager = team.getManager();
         if (manager != null && manager.getUserId().equals(userId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UnsupportedOperationException("Cannot Remove Manager From Members List");
 
-        User user = team.getTeamMembers().stream().filter(member -> member.getUserId().equals(userId))
-                .findFirst().orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+        User user = team.getTeamMembers()
+                .stream()
+                .filter(member -> member.getUserId().equals(userId))
+                .findFirst()
+                .orElseThrow(UsersNotAvailableException::new);
         team.removeMember(user);
 
         teamRepository.save(team);

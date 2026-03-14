@@ -44,3 +44,5 @@ build/
 /run.sh
 /stop.sh
 /stopWithVolumes.sh
+/deployment/docker/prod/admin_password.txt
+/banned_ips.txt

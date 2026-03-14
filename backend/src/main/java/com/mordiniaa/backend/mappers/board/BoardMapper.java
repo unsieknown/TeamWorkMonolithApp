@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -40,12 +41,18 @@ public class BoardMapper {
         BoardDetailsDto dto = new BoardDetailsDto();
         dto.setBoardId(board.getId().toHexString());
         dto.setBoardName(board.getBoardName());
+        dto.setCreatedAt(board.getCreatedAt());
+        dto.setUpdatedAt(board.getUpdatedAt());
 
         CompletableFuture<List<BoardDetailsDto.TaskCategoryDTO>> categoriesFuture = CompletableFuture
                 .supplyAsync(() -> board.getTaskCategories()
                         .stream()
                         .map(category -> {
                             BoardDetailsDto.TaskCategoryDTO tDto = new BoardDetailsDto.TaskCategoryDTO();
+
+                            if (category.getCategoryName() == null) {
+                                return null;
+                            }
                             tDto.setCategoryName(category.getCategoryName());
                             tDto.setPosition(category.getPosition());
                             tDto.setCreatedAt(category.getCreatedAt());
@@ -66,7 +73,7 @@ public class BoardMapper {
                             tDto.setTasks(shortTasks);
 
                             return tDto;
-                        }).toList()
+                        }).filter(Objects::nonNull).toList()
                 , boardMapperExecutor);
 
         CompletableFuture<List<UserDto>> usersFuture = CompletableFuture

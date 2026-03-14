@@ -16,7 +16,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         SecurityUserProjection user = userRepository.findSecurityUserByUsername(username)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return SecurityUser.build(user);
     }

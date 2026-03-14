@@ -3,13 +3,13 @@ package com.mordiniaa.backend.security.service.token;
 import com.mordiniaa.backend.models.user.mysql.AppRole;
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenFamilyRepository;
 import com.mordiniaa.backend.repositories.mysql.RefreshTokenRepository;
-import com.mordiniaa.backend.repositories.mysql.SessionRepository;
 import com.mordiniaa.backend.repositories.mysql.UserRepository;
 import com.mordiniaa.backend.security.service.SessionRedisService;
 import com.mordiniaa.backend.security.token.JwtToken;
 import com.mordiniaa.backend.security.token.RefreshToken;
 import com.mordiniaa.backend.security.token.TokenSet;
 import com.mordiniaa.backend.security.utils.JwtUtils;
+import com.mordiniaa.backend.services.auth.SessionService;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,10 +38,13 @@ public class TokenServiceTest {
     private TokenService tokenService;
 
     @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
     private RefreshTokenFamilyRepository refreshTokenFamilyRepository;
 
     @Autowired
-    private SessionRedisService sessionRedisService;
+    private SessionService sessionService;
     @Autowired
     private JwtUtils jwtUtils;
     @Autowired
@@ -51,12 +54,11 @@ public class TokenServiceTest {
     @Autowired
     private RawTokenService rawTokenService;
     @Autowired
-    private SessionRepository sessionRepository;
+    private SessionRedisService sessionRedisService;
 
     @AfterEach
     void tearDown() {
         refreshTokenFamilyRepository.deleteAll();
-        sessionRepository.deleteAll();
 
         ScanOptions options = ScanOptions.scanOptions()
                 .match("session:*")
@@ -82,8 +84,8 @@ public class TokenServiceTest {
         List<String> roles = List.of("ROLE_USER");
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("User-Agent", "Mozilla/5.0");
-        request.setRemoteAddr("192.168.1.10");
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
         TokenSet tokenSet = tokenService.issue(userId, roles, request);
         assertNotNull(tokenSet);
 
@@ -123,8 +125,8 @@ public class TokenServiceTest {
         List<String> roles = List.of("ROLE_USER");
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("User-Agent", "Mozilla/5.0");
-        request.setRemoteAddr("192.168.1.10");
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
         TokenSet tokenSet = tokenService.issue(userId, roles, request);
         UUID sessionId = getSessionIdFromJwtToken(tokenSet.getJwtToken().getToken());
 
@@ -165,8 +167,8 @@ public class TokenServiceTest {
         List<String> roles = List.of("ROLE_USER");
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("User-Agent", "Mozilla/5.0");
-        request.setRemoteAddr("192.168.1.10");
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
         TokenSet tokenSet = tokenService.issue(userId, roles, request);
         UUID sessionId = getSessionIdFromJwtToken(tokenSet.getJwtToken().getToken());
 
@@ -183,8 +185,8 @@ public class TokenServiceTest {
         List<String> roles = List.of("ROLE_USER");
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("User-Agent", "Mozilla/5.0");
-        request.setRemoteAddr("192.168.1.10");
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
         TokenSet tokenSet = tokenService.issue(userId, roles, request);
 
         assertThrows(RuntimeException.class,
@@ -202,8 +204,8 @@ public class TokenServiceTest {
         List<String> roles = List.of("ROLE_USER");
 
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("User-Agent", "Mozilla/5.0");
-        request.setRemoteAddr("192.168.1.10");
+        request.setRemoteAddr("172.123.123.123");
+        request.addHeader("User-Agent", "Mozilla");
         TokenSet tokenSet = tokenService.issue(userId, roles, request);
         UUID sessionId = getSessionIdFromJwtToken(tokenSet.getJwtToken().getToken());
 

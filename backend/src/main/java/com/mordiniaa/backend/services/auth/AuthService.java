@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.services.auth;
 
+import com.mordiniaa.backend.exceptions.RefreshTokenException;
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.response.user.UserInfoResponse;
 import com.mordiniaa.backend.security.service.JwtService;
@@ -11,6 +12,7 @@ import com.mordiniaa.backend.security.token.TokenSet;
 import com.mordiniaa.backend.security.utils.JwtUtils;
 import com.mordiniaa.backend.services.user.UserService;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
@@ -38,7 +40,7 @@ public class AuthService {
     public UserInfoResponse getUserDetails(UUID userId) {
 
         User user = userService.getUser(userId);
-        List<String> roles = List.of(user.getRole().getAppRole().toString()); // TODO: Change In Security
+        List<String> roles = List.of(user.getRole().getAppRole().toString());
 
         return UserInfoResponse.builder()
                 .userId(user.getUserId())
@@ -71,26 +73,64 @@ public class AuthService {
 
         String jwtToken = jwtService.parseJwtTokenFromCookie(request.getCookies());
         String refreshToken = refreshTokenService.parseRefreshTokenFromCookie(request.getCookies());
+        
+        if (refreshToken == null) {
+            throw new RefreshTokenException("Invalid Or Missing Refresh Token");
+        }
+
+        TokenSet tokenSet;
+        if (jwtToken == null) {
+            tokenSet = tokenService.refreshToken(refreshToken, request);
+        } else {
+            Claims claims = jwtService.parseAllowExpired(jwtToken);
+
+            UUID userId;
+            UUID sessionId;
+            try {
+                userId = jwtService.extractUserId(claims);
+                sessionId = jwtService.extractSessionId(claims);
+            } catch (Exception e) {
+                throw new JwtException("JWT Token Is Invalid");
+            }
+
+            tokenSet = tokenService.refreshToken(
+                    userId,
+                    sessionId,
+                    refreshToken,
+                    request
+            );
+        }
+
+        return createCookieResponse(
+                tokenSet.getJwtToken(),
+                tokenSet.getRefreshToken()
+        );
+    }
+
+    public List<ResponseCookie> logout(HttpServletRequest request) {
+
+        String jwtToken = jwtService.parseJwtTokenFromCookie(request.getCookies());
+        String refreshToken = refreshTokenService.parseRefreshTokenFromCookie(request.getCookies());
 
         Claims claims = jwtService.parseAllowExpired(jwtToken);
 
         if (jwtToken == null || refreshToken == null) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new JwtException("Missing Auth Tokens");
         }
 
-        UUID userId = jwtService.extractUserId(claims);
-        UUID sessionId = jwtService.extractSessionId(claims);
+        UUID sessionId;
+        UUID userId;
+        try {
+            sessionId = jwtService.extractSessionId(claims);
+            userId = jwtService.extractUserId(claims);
+        } catch (Exception e) {
+            throw new RuntimeException();
+        }
 
-        TokenSet tokenSet = tokenService.refreshToken(
-                userId,
-                sessionId,
-                refreshToken,
-                request
-        );
-        
+        TokenSet deactivatedTokens = tokenService.deactivateCookies(userId, sessionId, refreshToken);
         return createCookieResponse(
-                tokenSet.getJwtToken(),
-                tokenSet.getRefreshToken()
+                deactivatedTokens.getJwtToken(),
+                deactivatedTokens.getRefreshToken()
         );
     }
 

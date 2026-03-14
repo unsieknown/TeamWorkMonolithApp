@@ -1,18 +1,21 @@
 package com.mordiniaa.backend.services.storage.cloudStorage;
 
 import com.mordiniaa.backend.config.StorageProperties;
+import com.mordiniaa.backend.exceptions.FileNodeNotFound;
 import com.mordiniaa.backend.models.file.cloudStorage.*;
 import com.mordiniaa.backend.repositories.mysql.FileNodeRepository;
 import com.mordiniaa.backend.repositories.mysql.UserStorageRepository;
 import com.mordiniaa.backend.services.storage.StorageProvider;
 import com.mordiniaa.backend.utils.CloudStorageServiceUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CloudStorageServiceDeleteResource {
@@ -28,7 +31,7 @@ public class CloudStorageServiceDeleteResource {
 
         FileNode resource = fileNodeRepository
                 .findNodeByIdAndUserId(nodeId, userId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new FileNodeNotFound("Requested Resource Not Found"));
 
         UserStorage userStorage = resource.getUserStorage();
         long resourceSize = resource.getNodeType().equals(NodeType.DIRECTORY)
@@ -59,12 +62,15 @@ public class CloudStorageServiceDeleteResource {
         List<FileNodeUserMeta> deletedNodes = fileNodeRepository
                 .findFileNodesByDeletedTrue();
 
+        log.info("Deleting {} files", deletedNodes.size());
+
         List<String> keysToDelete = new ArrayList<>();
         Set<UUID> idsToDelete = new HashSet<>();
 
         for (FileNodeUserMeta meta : deletedNodes) {
             idsToDelete.add(meta.getId());
             if (!meta.getNodeType().equals(NodeType.DIRECTORY) && meta.getStorageKey() != null) {
+                log.info("Deleting file: {}, id: {}", meta.getStorageKey(), meta.getId());
                 keysToDelete.add(meta.getStorageKey());
                 continue;
             }
@@ -88,6 +94,7 @@ public class CloudStorageServiceDeleteResource {
             }
         }
 
+        log.info("Keys to Delete: {}", keysToDelete);
         keysToDelete.forEach(key -> storageProvider.delete(
                 storageProperties.getCloudStorage().getPath(),
                 key

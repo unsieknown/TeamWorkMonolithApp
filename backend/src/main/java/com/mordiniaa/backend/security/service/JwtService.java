@@ -1,5 +1,6 @@
 package com.mordiniaa.backend.security.service;
 
+import com.mordiniaa.backend.exceptions.InvalidJwtException;
 import com.mordiniaa.backend.security.token.JwtToken;
 import com.mordiniaa.backend.security.utils.JwtUtils;
 import io.jsonwebtoken.*;
@@ -7,6 +8,7 @@ import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -22,10 +24,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtService {
 
-    @Value("${security.app.jwt.token-name}")
+    @Value("${security.app.jwt.tokenName}")
     private String tokenName;
 
-    @Value("${security.app.jwt.minutes-of-life}")
+    @Value("${security.app.jwt.minutesOfLife}")
     private long accessTtlMinutes;
 
     @Value("${security.app.jwt.issuer}")
@@ -55,7 +57,8 @@ public class JwtService {
                 .signWith(jwtUtils.key())
                 .compact();
 
-        return new JwtToken(tokenName, jwt, exp.toEpochMilli());
+        long ttl = exp.toEpochMilli() - now.toEpochMilli();
+        return new JwtToken(tokenName, jwt, ttl);
     }
 
     public UUID extractUserId(Claims claims) {
@@ -65,7 +68,7 @@ public class JwtService {
         try {
             return UUID.fromString(stringId);
         } catch (Exception e) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new InvalidJwtException("JWT Token Is Invalid");
         }
     }
 
@@ -76,16 +79,14 @@ public class JwtService {
         try {
             return UUID.fromString(stringId);
         } catch (Exception e) {
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new InvalidJwtException("JWT Token Is Invalid");
         }
     }
 
     public List<String> extractRoles(Claims claims) {
 
-        List<?> temp = (List<?>) claims.get("role");
-        return temp.stream()
-                .map(String.class::cast)
-                .toList();
+        String role = (String) claims.get("role");
+        return List.of(role);
     }
 
     public Claims parseAndValidate(String jwtToken) {
@@ -109,5 +110,9 @@ public class JwtService {
                 .filter(cookie -> cookie.getName().equals(tokenName))
                 .map(Cookie::getValue)
                 .findFirst().orElse(null);
+    }
+
+    public JwtToken getEmptyToken() {
+        return new JwtToken(tokenName, "", 0);
     }
 }

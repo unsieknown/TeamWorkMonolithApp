@@ -6,11 +6,13 @@ WORKDIR  /app
 
 RUN chown teamwork:teamwork /app
 
-USER teamwork:teamwork
-
 ARG JAR_FILE=target/teamwork-app.jar
-
 COPY --chown=teamwork:teamwork ${JAR_FILE} app.jar
+
+RUN mkdir -p /data \
+    && chown -R teamwork:teamwork /data
+
+USER teamwork
 
 EXPOSE 8080
 

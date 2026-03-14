@@ -17,7 +17,7 @@ public interface FileNodeRepository extends JpaRepository<FileNode, UUID> {
     @Query("""
             select fn
             from FileNode fn
-            where fn.deleted = false and fn.id = :id and fn.userStorage.userId = :userId and fn.nodeType = 'DIRECTORY' or fn.nodeType = 'ROOT'
+            where fn.deleted = false and fn.id = :id and fn.userStorage.userId = :userId and (fn.nodeType = 'DIRECTORY' or fn.nodeType = 'ROOT')
             """)
     Optional<FileNode> findDirByIdAndOwnerId(UUID id, UUID userId);
 
@@ -75,7 +75,7 @@ public interface FileNodeRepository extends JpaRepository<FileNode, UUID> {
             """)
     List<FileNodeUserMeta> findFileNodesByDeletedTrue();
 
-    List<FileNode> findFileNodesByParentIdAndUserStorage_UserId(UUID parentId, UUID userStorageUserId);
+    List<FileNode> findFileNodesByParentIdAndUserStorage_UserIdAndDeletedFalse(UUID parentId, UUID userStorageUserId);
 
     @Query("""
             select fn

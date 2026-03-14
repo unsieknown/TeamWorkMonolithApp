@@ -1,11 +1,14 @@
 package com.mordiniaa.backend.services.board.admin;
 
+import com.mordiniaa.backend.exceptions.BoardNotFoundException;
+import com.mordiniaa.backend.exceptions.TeamNotFoundException;
 import com.mordiniaa.backend.models.board.Board;
 import com.mordiniaa.backend.models.board.BoardMember;
 import com.mordiniaa.backend.models.board.permissions.BoardPermission;
 import com.mordiniaa.backend.models.board.permissions.CategoryPermissions;
 import com.mordiniaa.backend.models.board.permissions.CommentPermission;
 import com.mordiniaa.backend.models.board.permissions.TaskPermission;
+import com.mordiniaa.backend.models.team.Team;
 import com.mordiniaa.backend.models.user.mysql.AppRole;
 import com.mordiniaa.backend.models.user.mysql.User;
 import com.mordiniaa.backend.repositories.mongo.board.BoardRepository;
@@ -36,6 +39,10 @@ public class BoardAdminService {
     private final MongoIdUtils mongoIdUtils;
     private final UserService userService;
 
+    /**
+     * Method Called By Event During The Process Of Deactivating User
+     * @param userId Deactivated User To Remove From Board
+     */
     @Transactional
     public void handleUserDeletion(UUID userId) {
 
@@ -70,10 +77,10 @@ public class BoardAdminService {
         mongoUserService.checkUserAvailability(userId);
 
         if (!teamRepository.existsTeamByTeamIdAndManager_UserId(teamId, userId))
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new TeamNotFoundException("Team Not Found");
 
         Board board = boardRepository.findByIdAndTeamId(boardId, teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         BoardMember ownerMember = createBoardOwner(userId);
         board.setOwner(ownerMember);

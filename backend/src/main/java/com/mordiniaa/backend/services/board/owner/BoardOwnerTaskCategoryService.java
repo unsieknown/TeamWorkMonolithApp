@@ -3,6 +3,8 @@ package com.mordiniaa.backend.services.board.owner;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.mordiniaa.backend.dto.board.BoardDetailsDto;
+import com.mordiniaa.backend.exceptions.*;
+import com.mordiniaa.backend.exceptions.UnsupportedOperationException;
 import com.mordiniaa.backend.mappers.board.BoardMapper;
 import com.mordiniaa.backend.models.board.Board;
 import com.mordiniaa.backend.models.board.TaskCategory;
@@ -14,6 +16,7 @@ import com.mordiniaa.backend.request.board.TaskCategoryRequest;
 import com.mordiniaa.backend.services.user.MongoUserService;
 import com.mordiniaa.backend.utils.MongoIdUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -41,7 +44,7 @@ public class BoardOwnerTaskCategoryService {
         ObjectId boardId = mongoIdUtils.getObjectId(bId);
 
         Board board = boardAggregationRepository.findFullBoardByIdAndOwner(boardId, boardOwner)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         String categoryName = request.getNewCategoryName().trim();
         int newPosition = board.getNextPosition();
@@ -62,11 +65,11 @@ public class BoardOwnerTaskCategoryService {
 
         UpdateResult result = mongoTemplate.updateFirst(query, update, Board.class);
         if (result.getModifiedCount() == 0)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new ResourceNotFoundException("Resource not found");
 
         BoardFull updatedBoard = boardAggregationRepository
                 .findBoardWithTasksByUserIdAndBoardIdAndTeamId(boardOwner, boardId, board.getTeamId())
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
         return boardMapper.toDetailedDto(updatedBoard);
     }
 
@@ -79,7 +82,7 @@ public class BoardOwnerTaskCategoryService {
 
         String oldCatName = request.getExistingCategoryName();
         if (oldCatName == null || oldCatName.isBlank())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Existing category name cannot be null or blank");
         oldCatName = oldCatName.trim();
 
         Query query = Query.query(
@@ -98,11 +101,11 @@ public class BoardOwnerTaskCategoryService {
 
         UpdateResult result = mongoTemplate.updateFirst(query, update, Board.class);
         if (result.getModifiedCount() == 0)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new ResourceNotFoundException("Resource not found");
 
         BoardFull updatedBoard = boardAggregationRepository
                 .findBoardWithTasksByUserIdAndBoardIdAndTeamId(boardOwner, boardId, teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         return boardMapper.toDetailedDto(updatedBoard);
     }
@@ -114,14 +117,14 @@ public class BoardOwnerTaskCategoryService {
 
         String catName = request.getExistingCategoryName();
         if (catName == null || catName.isBlank())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Existing category name cannot be null or blank");
         catName = catName.trim();
 
         Board board = boardAggregationRepository.findFullBoardByIdAndOwner(boardId, boardOwner)
-                .orElseThrow(RuntimeException::new);
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         if (newPosition >= board.getNextPosition() || newPosition < 0)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Position cannot be less than 0 and gather than last position");
 
         String categoryName = catName;
         TaskCategory category = board.getTaskCategories()
@@ -130,11 +133,11 @@ public class BoardOwnerTaskCategoryService {
                 .findFirst().orElse(null);
 
         if (category == null)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new ResourceNotFoundException("Category not found");
 
         int currentPosition = category.getPosition();
         if (currentPosition == newPosition)
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UnsupportedOperationException("Category is already at the specified position");
 
         Stream<TaskCategory> categoryStream = board.getTaskCategories().stream();
         if (newPosition > currentPosition)
@@ -148,7 +151,7 @@ public class BoardOwnerTaskCategoryService {
         boardRepository.save(board);
         BoardFull updatedBoard = boardAggregationRepository
                 .findBoardWithTasksByUserIdAndBoardIdAndTeamId(boardOwner, boardId, teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         return boardMapper.toDetailedDto(updatedBoard);
     }
@@ -160,17 +163,17 @@ public class BoardOwnerTaskCategoryService {
 
         String catName = request.getExistingCategoryName();
         if (catName == null || catName.isBlank())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new BadRequestException("Existing category name cannot be null or blank");
         catName = catName.trim();
 
         Board board = boardRepository.findBoardByIdAndOwner_UserIdAndTeamId(boardId, boardOwner, teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         String categoryName = catName;
         TaskCategory taskCategory = board.getTaskCategories().stream()
                 .filter(tC -> tC.getCategoryName().equals(categoryName))
                 .findFirst()
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new TaskCategoryNotFoundException("Task Category Not Found"));
 
         int currentPosition = taskCategory.getPosition();
         board.getTaskCategories().stream().filter(tc -> tc.getPosition() > currentPosition)
@@ -185,12 +188,12 @@ public class BoardOwnerTaskCategoryService {
 
         DeleteResult result = mongoTemplate.remove(tasksQuery, Task.class);
         if (result.getDeletedCount() != tasksIds.size())
-            throw new RuntimeException(); // TODO: Change In Exceptions Section
+            throw new UnexpectedException("Unknown Error Occurred");
 
         boardRepository.save(board);
         BoardFull updatedBoard = boardAggregationRepository
                 .findBoardWithTasksByUserIdAndBoardIdAndTeamId(boardOwner, boardId, teamId)
-                .orElseThrow(RuntimeException::new); // TODO: Change In Exceptions Section
+                .orElseThrow(() -> new BoardNotFoundException("Board Not Found"));
 
         return boardMapper.toDetailedDto(updatedBoard);
     }

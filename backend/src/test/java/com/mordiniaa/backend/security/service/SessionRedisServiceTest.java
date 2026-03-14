@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
 
@@ -18,19 +19,18 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SessionRedisServiceTest {
 
     @Autowired
-    private SessionRedisService sessionRedisService;
-
-    @Autowired
     private StringRedisTemplate redisTemplate;
+    @Autowired
+    private SessionRedisService sessionRedisService;
 
     @Test
     @DisplayName("Create Session Test")
-    void storeSessionTest() {
+    void createSessionTest() {
 
         UUID sessionId = UUID.randomUUID();
         long tokenId = new Random().nextLong();
 
-        sessionRedisService.storeSession(sessionId, tokenId, Duration.ofDays(30).toMillis());
+        sessionRedisService.storeSession(sessionId, tokenId, Instant.now().plusMillis(Duration.ofDays(30).toMillis()).toEpochMilli());
 
         String val = redisTemplate.opsForValue().get("session:" + sessionId);
         assertNotNull(val);
@@ -44,10 +44,10 @@ public class SessionRedisServiceTest {
         UUID sessionId = UUID.randomUUID();
         long tokenId = new Random().nextLong();
 
-        sessionRedisService.storeSession(sessionId, tokenId, Duration.ofDays(30).toMillis());
+        sessionRedisService.storeSession(sessionId, tokenId, Instant.now().plusMillis(Duration.ofDays(30).toMillis()).toEpochMilli());
 
         long newId = new Random().nextLong();
-        sessionRedisService.rotateRefreshToken(sessionId, newId, Duration.ofDays(30).toMillis());
+        sessionRedisService.rotateRefreshToken(sessionId, newId, Instant.now().plusMillis(Duration.ofDays(30).toMillis()).toEpochMilli());
 
         String val = redisTemplate.opsForValue().get("session:" + sessionId);
         assertNotNull(val);
@@ -61,10 +61,11 @@ public class SessionRedisServiceTest {
         UUID sessionId = UUID.randomUUID();
         long tokenId = new Random().nextLong();
 
-        sessionRedisService.storeSession(sessionId, tokenId, Duration.ofDays(30).toMillis());
+        sessionRedisService.storeSession(sessionId, tokenId, Instant.now().plusMillis(Duration.ofDays(30).toMillis()).toEpochMilli());
 
         sessionRedisService.deleteSession(sessionId);
 
-        assertNull(sessionRedisService.getTokenIdBySessionId(sessionId));
+        assertThrows(RuntimeException.class,
+                () -> sessionRedisService.getTokenIdBySessionId(sessionId));
     }
 }

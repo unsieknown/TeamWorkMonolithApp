@@ -35,7 +35,7 @@ public class UserStorage extends BaseEntity {
     @Column(name = "quota_bytes", nullable = false)
     private Long quotaBytes = 50_000_000_000L;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "root_node_id")
     private FileNode rootNode;
 
