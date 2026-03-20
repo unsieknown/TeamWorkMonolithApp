@@ -47,8 +47,9 @@ build/
 /deployment/docker/prod/admin_password.txt
 /banned_ips.txt
 /deployment/k8s/teamWorkEnv/.env
-/deployment/k8s/redisEnv/.env
 /deployment/k8s/mysql/env/.env.public
 /deployment/k8s/mongo/env/.env.public
 /deployment/k8s/mysql/env/.env.secret
 /deployment/k8s/mongo/env/.env.secret
+/deployment/k8s/redis/env/.env.private
+/deployment/k8s/redis/env/.env.public
