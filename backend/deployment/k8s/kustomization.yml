@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - mongo/mongo-master.yml
   - mysql/mysql-master.yml
+  - redis/redis-master.yml
 configMapGenerator:
   - name: mongo-init
     files:
@@ -15,6 +16,9 @@ configMapGenerator:
   - name: mysql-store-env
     envs:
       - mysql/env/.env.public
+  - name: redis-store-env
+    envs:
+      - redis/env/.env.public
 secretGenerator:
   - name: mongo-secret
     envs:
@@ -22,3 +26,9 @@ secretGenerator:
   - name: mysql-secret
     envs:
       - mysql/env/.env.secret
+  - name: redis-config
+    files:
+      - redis/config/redis.conf
+  - name: redis-secret
+    envs:
+      - redis/env/.env.private
