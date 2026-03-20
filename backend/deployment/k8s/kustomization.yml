@@ -4,6 +4,7 @@ resources:
   - mongo/mongo-master.yml
   - mysql/mysql-master.yml
   - redis/redis-master.yml
+  - kafka/kafka-master.yml
 configMapGenerator:
   - name: mongo-init
     files:
