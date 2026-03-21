@@ -28,7 +28,7 @@ public class Setup {
     @Transactional
     CommandLineRunner setAdmin(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            String password = Files.readString(Path.of("/run/secrets/admin_password"));
+            String password = Files.readString(Path.of("/run/secrets/admin_password.txt"));
             long adminCount = userRepository.countByRole_AppRole(AppRole.ROLE_ADMIN);
             if (adminCount != 1) {
                 if (adminCount > 1) {
