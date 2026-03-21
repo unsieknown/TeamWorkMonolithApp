@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: teamwork-service
+spec:
+  selector:
+    app: teamwork
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: "TCP"
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: teamwork-pv
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  volumeMode: Filesystem
+  hostPath:
+    path: /prod_data
+    type: DirectoryOrCreate
+  capacity:
+    storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: teamwork-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  volumeMode: Filesystem
+  volumeName: teamwork-pv
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: teamwork-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: teamwork
+  template:
+    metadata:
+      labels:
+        app: teamwork
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 101
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+      initContainers:
+        - name: fix-permision
+          image: busybox
+          command:
+            - sh
+            - -c
+            - "chown -R 100:101 /data"
+          volumeMounts:
+            - mountPath: /data
+              name: teamwork-volume
+      volumes:
+        - name: teamwork-volume
+          persistentVolumeClaim:
+            claimName: teamwork-pvc
+        - name: teamwork-admin-secret
+          secret:
+            secretName: teamwork-admin-pass-secret
+      containers:
+        - name: teamwork-container
+          image: mordiniaa/teamworkmon
+          workingDir: /app
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /run/secrets
+              name: teamwork-admin-secret
+            - mountPath: /data
+              name: teamwork-volume
+          envFrom:
+            - configMapRef:
+                name: teamwork-env
+            - secretRef:
+                name: teamwork-secret-env
+          env:
+            - name: PROFILE
+              value: "prod"
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: KAFKA_BS_SERVER
+              value: "kafka-service:9092"
+            - name: MONGO_HOST
+              value: "mongo-service"
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MYSQL_HOST
+              value: "mysql-service"
+            - name: MYSQL_PORT
+              value: "3306"
+            - name: REDIS_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: REDIS_USER
+                  name: redis-store-env
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: REDIS_PASSWORD
+                  name: redis-secret
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  key: MYSQL_DATABASE
+                  name: mysql-store-env
+            - name: MYSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: MYSQL_USER
+                  name: mysql-store-env
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: MYSQL_PASSWORD
+                  name: mysql-secret
