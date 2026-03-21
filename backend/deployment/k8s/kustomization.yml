@@ -6,6 +6,7 @@ resources:
   - redis/redis-master.yml
   - kafka/kafka-master.yml
   - phpmyadmin/phpmyadmin-master.yml
+  - teamwork/teamwork-master.yml
 configMapGenerator:
   - name: mongo-init
     files:
@@ -21,6 +22,9 @@ configMapGenerator:
   - name: redis-store-env
     envs:
       - redis/env/.env.public
+  - name: teamwork-env
+    envs:
+      - teamwork/env/.env.public
 secretGenerator:
   - name: mongo-secret
     envs:
@@ -34,3 +38,9 @@ secretGenerator:
   - name: redis-secret
     envs:
       - redis/env/.env.private
+  - name: teamwork-secret-env
+    envs:
+      - teamwork/env/.env.private
+  - name: teamwork-admin-pass-secret
+    files:
+      - teamwork/admin_creds/admin_password.txt
