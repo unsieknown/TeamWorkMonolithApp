@@ -37,10 +37,10 @@ secretGenerator:
       - redis/config/redis.conf
   - name: redis-secret
     envs:
-      - redis/env/.env.private
+      - redis/env/.env.secret
   - name: teamwork-secret-env
     envs:
-      - teamwork/env/.env.private
+      - teamwork/env/.env.secret
   - name: teamwork-admin-pass-secret
     files:
       - teamwork/admin_creds/admin_password.txt

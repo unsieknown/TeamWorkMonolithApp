@@ -51,8 +51,8 @@ build/
 /deployment/k8s/mongo/env/.env.public
 /deployment/k8s/mysql/env/.env.secret
 /deployment/k8s/mongo/env/.env.secret
-/deployment/k8s/redis/env/.env.private
+/deployment/k8s/redis/env/.env.secret
 /deployment/k8s/redis/env/.env.public
 /deployment/k8s/teamwork/env/.env.public
-/deployment/k8s/teamwork/env/.env.private
+/deployment/k8s/teamwork/env/.env.secret
 /deployment/k8s/teamwork/admin_creds/admin_password.txt
