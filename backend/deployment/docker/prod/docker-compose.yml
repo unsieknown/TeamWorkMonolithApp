@@ -114,7 +114,7 @@ services:
       kafka:
         condition: service_healthy
     volumes:
-      - ./admin_password.txt:/run/secrets/admin_password:ro
+      - ./admin_password.txt:/run/secrets/admin_password.txt:ro
       - prod_data:/data
     ports:
       - "8080:8080"
